@@ -157,7 +157,18 @@ public class HSIInterface
         //        FirePropertyChangedEvent("TimeEventData1");
         //    }
         //}
-
+        private string _name;
+        private uint _srCnt;
+        private uint _drCnt;
+        private uint _timeStampCnt;
+        private uint _obtCnt;
+        private uint _uksCnt;
+        public string Name { get { return _name; } set { _name = value; FirePropertyChangedEvent("Name"); } }
+        public uint SRCnt { get { return _srCnt; } set { _srCnt = value; FirePropertyChangedEvent("SRCnt"); } }
+        public uint DRCnt { get { return _drCnt; } set { _drCnt = value; FirePropertyChangedEvent("DRCnt"); } }
+        public uint TimeStampCnt { get { return _timeStampCnt; } set { _timeStampCnt = value; FirePropertyChangedEvent("TimeStampCnt"); } }
+        public uint ObtCnt { get { return _obtCnt; } set { _obtCnt = value; FirePropertyChangedEvent("ObtCnt"); } }
+        public uint UksCnt { get { return _uksCnt; } set { _uksCnt = value; FirePropertyChangedEvent("UksCnt"); } }
 
         public BUKChannel(string chName)
         {
@@ -167,6 +178,12 @@ public class HSIInterface
         public void UpdateTimeEventData()
         {
             //Name = GetData.Name;
+            Name = GetData.Name;
+            SRCnt = GetData.SRCnt+1;
+            DRCnt = GetData.DRCnt;
+            TimeStampCnt = GetData.TimeStampCnt;
+            ObtCnt = GetData.OBTCnt;
+            UksCnt = GetData.UKSCnt;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -179,6 +196,11 @@ public class HSIInterface
         {
             GetData.Reset();
 
+            SRCnt = 0;
+            DRCnt = 0;
+            TimeStampCnt = 0;
+            ObtCnt = 0;
+            UksCnt = 0;
             //TimeEventData.Reset();
         }
     }
@@ -258,6 +280,18 @@ public class HSIInterface
             Add(new BUKChannel("Резервный"));
         }
 
+        /// <summary>
+        ///  Определение делегата обработки ошибок протокола
+        /// </summary>
+        /// <param name="errMsg">класс сообщения, порожденный от MsgBase, описывающиё ошибку</param>
+        public delegate void onUKSFrameReceivedDelegate(byte[] buf);
+
+        /// <summary>
+        /// Делегат, вызываемый при возникновении ошибки в декодере
+        /// </summary>
+        public onUKSFrameReceivedDelegate onUKSFrameReceived;
+
+
         public void Update(byte[] buf)
         {
             HSIFrame = ByteArrayToStructure.make<HSIMessageStruct>(buf);
@@ -283,6 +317,10 @@ public class HSIInterface
                     break;
                 case HSI_UKS_FLAG :
                     Items[_curChannelId].GetData.UKSCnt++;
+                    if (onUKSFrameReceived != null)           // если есть обработчик УКС, вызовем его, чтобы вывести их на экран, к примеру
+                    {
+                        onUKSFrameReceived(buf);
+                    }
                     break;
                 default:
                     break;
@@ -290,7 +328,8 @@ public class HSIInterface
         }
     }
 
-    public struct ControlStruct
+    /*
+    public struct BUKControlStruct
     {
         public byte Control;
 
@@ -321,13 +360,14 @@ public class HSIInterface
         public int OBTOn { get { return _controlV[_OBTSect]; } set { _controlV[_OBTSect] = value; } }
         public int ErrRegOn { get { return _controlV[_ErrRegSect]; } set { _controlV[_ErrRegSect] = value; } }
     }
+     */
 
-    private uint _curChannelId;
+    //private uint _curChannelId;
 
     /// <summary>
     /// Байт управления ВСИ
     /// </summary>
-    public ControlStruct KVVControl;
+    //public BUKControlStruct BUKControl;
 
     public BUKStatistics BUKStat;
     public KVVStatistics KVVStat;
@@ -336,10 +376,10 @@ public class HSIInterface
         BUKStat = new BUKStatistics();
         KVVStat = new KVVStatistics();
 
-        KVVControl.Init();
+        //BUKControl.Init();
 
-        KVVControl.OBTOn = 1;
-        KVVControl.ErrRegOn = 1;
+        //BUKControl.OBTOn = 1;
+        //BUKControl.ErrRegOn = 1;
 	}
 
     public void MakeControl(HSI_CTRLS CtrlBitPos, int Value)

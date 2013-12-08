@@ -120,8 +120,8 @@ namespace kia_xan
             fTxtWriter.AutoFlush = true;
 
             _decoder = new ProtocolUSB5E4DNoCrc(null, fTxtWriter, false, true);// new ProtocolUSB5E4D();
-            _decoder.onMessage = onMessageFunc;
-            _decoder.onProtocolError = onErrorFunc;
+            _decoder.GotProtocolMsg += new ProtocolUSBBase.ProtocolMsgEventHandler(onMessageFunc);
+            _decoder.GotProtocolError += new ProtocolUSBBase.ProtocolErrorEventHandler(onErrorFunc);
 
             Device = new XSANDevice(XSANSerial, _decoder);
             Device.onNewState = onChangeConnection;
@@ -150,25 +150,25 @@ namespace kia_xan
 
         void onMessageFunc(MsgBase msg)
         {
-            ProtocolMsg msg1 = msg as ProtocolMsg;
+            ProtocolMsgEventArgs msg1 = msg as ProtocolMsgEventArgs;
             if (msg1 != null)
             {
-                switch (msg1.addr)
+                switch (msg1.Addr)
                 {
                     case TIME_ADDR_GET:
-                        Array.Copy(msg1.data, 0, eTime.data, 0, 6);
+                        Array.Copy(msg1.Data, 0, eTime.data, 0, 6);
                         break;
                     case HSI_KVV_DATA_GET:
-                        HSIInt.KVVStat.Update(msg1.data);
+                        HSIInt.KVVStat.Update(msg1.Data);
                         break;
                     case HSI_BUK_DATA_GET:
-                        HSIInt.BUKStat.Update(msg1.data);
+                        HSIInt.BUKStat.Update(msg1.Data);
                         break;
                     case HSI_BUK_CTRL_GET:
-                        BUKControl.GetValue = msg1.data[0];
+                        BUKControl.GetValue = msg1.Data[0];
                         break;
                     case HSI_KVV_CTRL_GET:
-                        KVVControl.GetValue = msg1.data[0];
+                        KVVControl.GetValue = msg1.Data[0];
                         break;
                 }
             }

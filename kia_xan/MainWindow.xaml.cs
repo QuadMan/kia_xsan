@@ -19,7 +19,10 @@ namespace kia_xan
     /// Interaction logic for MainWindow.xaml
     /// </summary>
     public partial class MainWindow : Window
-    {      
+    {
+        public const string SW_CAPTION = "КИА КВВ";
+        const string SW_VERSION = "0.0.1.0";
+
         public XSAN Xsan;
         private System.Windows.Threading.DispatcherTimer dispatcherTimer;
         HSIWindow hWin;
@@ -28,6 +31,8 @@ namespace kia_xan
         {
             InitializeComponent();
             Xsan = new XSAN();
+
+            this.Title = SW_CAPTION;// +"  " + SW_VERSION;
 
             hWin = new HSIWindow(Xsan);
 
@@ -44,6 +49,8 @@ namespace kia_xan
             TimeLabel.Content = Xsan.eTime.ToString();
             Xsan.HSIInt.BUKStat[0].UpdateTimeEventData();
             Xsan.HSIInt.BUKStat[1].UpdateTimeEventData();
+            Xsan.HSIInt.KVVStat[0].UpdateTimeEventData();
+            Xsan.HSIInt.KVVStat[1].UpdateTimeEventData();
            
             if (Xsan.Connected)
             {
@@ -55,8 +62,7 @@ namespace kia_xan
                 ConnectionLabel.Background = Brushes.Red;
                 ConnectionLabel.Content = "Прибор отключен";
             }
-            SpeedLabel.Content = Xsan.Device.speed.ToString();
-            //GlobalBufLabel.Content = _dev.globalBufSize.ToString();
+            SpeedLabel.Content = Xsan.Device.speed.ToString() + " [" + Xsan.Device.globalBufSize.ToString() + "]";
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)

@@ -16,65 +16,26 @@ using System.Windows.Shapes;
 
 namespace kia_xan
 {
-    public class HSISTat : INotifyPropertyChanged
-    {
-        private string _chName;
-        public HSISTat()
-        {
-            _chName = "Основной";
-            _framesCnt = 10;
-        }
-
-        public string ChName
-        {
-            get { return _chName; }
-            set
-            {
-                _chName = value;
-                FirePropertyChangedEvent("ChName");
-            }
-        }
-        private int _framesCnt;
-        public int FramesCnt
-        {
-            get { return _framesCnt; }
-            set
-            {
-                _framesCnt = value;
-                FirePropertyChangedEvent("FramesCnt");
-            }
-        }
-        public event PropertyChangedEventHandler PropertyChanged;
-        private void FirePropertyChangedEvent(string propertyName)
-        {
-            if (PropertyChanged != null) PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
-        }
-    }
-
-    public class HSIStatList : ObservableCollection<HSISTat>
-    {
-        public HSIStatList()
-            : base()
-            {
-                Add(new HSISTat());
-                Add(new HSISTat());
-            }
-    }
-
     /// <summary>
     /// Interaction logic for HSIWindow.xaml
     /// </summary>
     public partial class HSIWindow : Window
     {
-        HSIStatList hList = new HSIStatList();
         private System.Windows.Threading.DispatcherTimer dispatcherTimer;
         XSAN _xsan;
+
+        public void newUKSFrame(byte[] buf)
+        {
+
+        }
 
         public HSIWindow(XSAN xxsan)
         {
             InitializeComponent();
             _xsan = xxsan;
+            _xsan.HSIInt.BUKStat.onUKSFrameReceived = newUKSFrame;
             KVVGrid.DataContext = _xsan.HSIInt.BUKStat;
+            BUKGrid.DataContext = _xsan.HSIInt.KVVStat;
 
             dispatcherTimer = new System.Windows.Threading.DispatcherTimer();
             dispatcherTimer.Tick += new EventHandler(timerWork);
@@ -82,26 +43,44 @@ namespace kia_xan
             dispatcherTimer.Start();
         }
 
-        public void timerWork(object sender, EventArgs e)
+        private void UpdateBUKControl()
         {
-            _xsan.BUKControl.TimerTick();
-            _xsan.KVVControl.TimerTick();
-
-            //Random random = new Random();
-            //hList[0].FramesCnt += random.Next(5);
-            //hList[1].FramesCnt += random.Next(10);
+            BUKOnCb.IsChecked = (bool)((_xsan.BUKControl.GetValue & 1) == 1);
+            BUKDataChannelCbb.SelectedIndex = (_xsan.BUKControl.GetValue >> 2) & 3;
+            BUKCmdChannelCbb.SelectedIndex = (_xsan.BUKControl.GetValue >> 1) & 1;
+            BUKErrorRegisterCb.IsChecked = (bool)(((_xsan.BUKControl.GetValue >>  4) & 1) == 1);
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private void UpdateKVVControl()
         {
+            KVVCmdChannelCbb.SelectedIndex = (_xsan.KVVControl.GetValue & 3);
+            KVVDatChannelCbb.SelectedIndex = ((_xsan.KVVControl.GetValue >> 2) & 3);
+            KVVReadyCb.IsChecked = ((_xsan.KVVControl.GetValue >> 4) & 1) == 1;
+            KVVBusyCb.IsChecked = ((_xsan.KVVControl.GetValue >> 5) & 1) == 1;
+            KVVMECb.IsChecked = ((_xsan.KVVControl.GetValue >> 6) & 1) == 1;
+        }
+
+        public void timerWork(object sender, EventArgs e)
+        {
+            // проверим, были ли изменены элементы управления, нужно обновить
+            if (_xsan.BUKControl.TimerTick() == EGSE.Utilites.ControlValue.ValueState.vsChanged)
+            {
+                UpdateBUKControl();
+            }
+            if (_xsan.KVVControl.TimerTick() == EGSE.Utilites.ControlValue.ValueState.vsChanged)
+            {
+                UpdateKVVControl();
+            }
         }
 
         private void CheckBox_Checked(object sender, RoutedEventArgs e)
         {
+            _xsan.BUKControl.SetValue = 1;
         }
 
-        private void CheckBox_Checked_1(object sender, RoutedEventArgs e)
+        private void BUKErrorRegisterCb_Checked(object sender, RoutedEventArgs e)
         {
+
         }
     }
 }
