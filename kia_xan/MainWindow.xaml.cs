@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -30,11 +31,18 @@ namespace kia_xan
         public MainWindow()
         {
             InitializeComponent();
+            //uint n = 0;
+            //BitArray ba = new BitArray(10);
+            //if (ba[0]) {
+            //    new = 1;
+            //}
+
+
             Xsan = new XSAN();
 
             this.Title = SW_CAPTION;// +"  " + SW_VERSION;
 
-            hWin = new HSIWindow(ref Xsan);
+            hWin = new HSIWindow(Xsan);
 
             //hWin.KVVGrid.DataContext = Xsan.HSIInt.BUKStat;
             //hWin.BUKGrid.DataContext = Xsan.HSIInt.KVVStat;
@@ -50,12 +58,6 @@ namespace kia_xan
         public void timerWork(object sender, EventArgs e)
         {
             TimeLabel.Content = Xsan.eTime.ToString();
-            if (Xsan.Connected) { 
-                Xsan.HSIInt.BUKStat[0].UpdateTimeEventData();
-                Xsan.HSIInt.BUKStat[1].UpdateTimeEventData();
-                Xsan.HSIInt.KVVStat[0].UpdateTimeEventData();
-                Xsan.HSIInt.KVVStat[1].UpdateTimeEventData();
-            }
 
             if (Xsan.Connected)
             {

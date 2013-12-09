@@ -58,6 +58,7 @@ namespace kia_xan
 
         private const int HSI_BUK_CTRL_ADDR = 0x0A;
         private const int HSI_KVV_CTRL_ADDR = 0x0D;
+        private const int HSI_UKS_ADDR = 0x0C;
 
         private byte[] buf;
 
@@ -88,6 +89,11 @@ namespace kia_xan
             base.SendCmd(TIME_RESET_ADDR, buf);
             base.SendCmd(TIME_DATA_ADDR, time.data);
             base.SendCmd(TIME_SET_ADDR, buf);
+        }
+
+        public void CmdSendUKS(byte[] UKSBuf)
+        {
+            base.SendCmd(HSI_UKS_ADDR, UKSBuf);
         }
 
     }
@@ -144,7 +150,10 @@ namespace kia_xan
             if (Connected)
             {
                 Device.CmdSendTime();
+                KVVControl.RefreshGetValue();
+                BUKControl.RefreshGetValue();
             }
+
 
         }
 
@@ -159,10 +168,10 @@ namespace kia_xan
                         Array.Copy(msg1.Data, 0, eTime.data, 0, 6);
                         break;
                     case HSI_KVV_DATA_GET:
-                        HSIInt.KVVStat.Update(msg1.Data);
+                        HSIInt.BUKStat.Update(msg1.Data, msg1.DataLen);
                         break;
                     case HSI_BUK_DATA_GET:
-                        HSIInt.BUKStat.Update(msg1.Data);
+                        HSIInt.KVVStat.Update(msg1.Data);
                         break;
                     case HSI_BUK_CTRL_GET:
                         BUKControl.GetValue = msg1.Data[0];
