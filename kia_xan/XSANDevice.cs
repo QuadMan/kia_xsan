@@ -56,8 +56,8 @@ namespace kia_xan
         private const int TIME_DATA_ADDR = 0x02;
         private const int TIME_SET_ADDR = 0x03;
 
-        private const int HSI_KVV_CTRL_ADDR = 0x0A;
-        private const int HSI_BUK_CTRL_ADDR = 0x0D;
+        private const int HSI_BUK_CTRL_ADDR = 0x0A;
+        private const int HSI_KVV_CTRL_ADDR = 0x0D;
 
         private byte[] buf;
 
@@ -72,9 +72,9 @@ namespace kia_xan
             base.SendCmd(HSI_BUK_CTRL_ADDR, buf);
         }
 
-        public void CmdHSIKVVControl(byte HSIControl)
+        public void CmdHSIKVVControl(byte HSIControl,int frameSize)
         {
-            buf = new byte[1] { HSIControl };
+            buf = new byte[3] { HSIControl, (byte)(frameSize >> 8), (byte)frameSize };
             base.SendCmd(HSI_KVV_CTRL_ADDR, buf);
         }
 

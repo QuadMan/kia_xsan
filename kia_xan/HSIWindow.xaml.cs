@@ -24,18 +24,25 @@ namespace kia_xan
         private System.Windows.Threading.DispatcherTimer dispatcherTimer;
         XSAN _xsan;
 
+        public ObservableCollection<kia_xan.HSIInterface.BUKChannel> BUKCollection = new ObservableCollection<kia_xan.HSIInterface.BUKChannel>();
+
         public void newUKSFrame(byte[] buf)
         {
 
         }
 
-        public HSIWindow(XSAN xxsan)
+        public HSIWindow(ref XSAN xxsan)
         {
+            //
+            BUKCollection.Add(new HSIInterface.BUKChannel("AAA"));
+            BUKCollection.Add(new HSIInterface.BUKChannel("BBB"));
+            //
             InitializeComponent();
             _xsan = xxsan;
             _xsan.HSIInt.BUKStat.onUKSFrameReceived = newUKSFrame;
-            KVVGrid.DataContext = _xsan.HSIInt.BUKStat;
-            BUKGrid.DataContext = _xsan.HSIInt.KVVStat;
+            //KVVGrid.DataContext = _xsan.HSIInt.BUKStat;
+            //BUKGrid.DataContext = _xsan.HSIInt.KVVStat;
+            BUKGrid.DataContext = BUKCollection;
 
             dispatcherTimer = new System.Windows.Threading.DispatcherTimer();
             dispatcherTimer.Tick += new EventHandler(timerWork);
@@ -62,6 +69,9 @@ namespace kia_xan
 
         public void timerWork(object sender, EventArgs e)
         {
+            BUKCollection[0].SRCnt++;
+            BUKCollection[1].SRCnt++;
+            BUKCollection[0].Name = "ff";
             // проверим, были ли изменены элементы управления, нужно обновить
             if (_xsan.BUKControl.TimerTick() == EGSE.Utilites.ControlValue.ValueState.vsChanged)
             {
@@ -81,6 +91,12 @@ namespace kia_xan
         private void BUKErrorRegisterCb_Checked(object sender, RoutedEventArgs e)
         {
 
+        }
+
+        private void KVVReadyCb_Checked(object sender, RoutedEventArgs e)
+        {
+            _xsan.KVVControl.SetValue = 0x10;
+            _xsan.Device.CmdHSIKVVControl((byte)_xsan.KVVControl.SetValue, 100);
         }
     }
 }

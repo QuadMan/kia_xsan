@@ -28,20 +28,20 @@
                     <ComboBoxItem Content="Команды по основнову каналу"/>
                     <ComboBoxItem Content="Команды по резервному каналу"/>
                 </ComboBox>
-                <CheckBox x:Name="KVVReadyCb" Content="Готов" Margin="5"/>
+                <CheckBox x:Name="KVVReadyCb" Content="Готов" Margin="5" Checked="KVVReadyCb_Checked"/>
                 <CheckBox x:Name="KVVBusyCb" Content="Занят" Margin="5"/>
                 <CheckBox x:Name="KVVMECb" Content="Ошибка сообщения" Margin="5"/>
             </StackPanel>
         </GroupBox>
         <GroupBox Header="Данные от БУК" HorizontalAlignment="Left" Margin="229,10,0,0" VerticalAlignment="Top" Height="92" Width="557">
-            <DataGrid x:Name="BUKGrid" ItemsSource="{Binding}" Margin="0" AutoGenerateColumns="False" ColumnWidth="100" IsReadOnly="True">
+            <DataGrid x:Name="BUKGrid" ItemsSource="{Binding}" Margin="0" AutoGenerateColumns="False" ColumnWidth="100" IsReadOnly="True" SelectionMode="Single">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Binding="{Binding Name}" ClipboardContentBinding="{x:Null}" Header="Канал" CanUserResize="False" Width="80"/>
-                    <DataGridTextColumn Binding="{Binding SRCnt}" ClipboardContentBinding="{x:Null}" Header="Запрос статус" CanUserResize="False" Width="90"/>
-                    <DataGridTextColumn Binding="{Binding DRCnt}" ClipboardContentBinding="{x:Null}" Header="Запрос данных" CanUserResize="False" Width="90"/>
-                    <DataGridTextColumn Binding="{Binding TimeStampCnt}" ClipboardContentBinding="{x:Null}" Header="Метка времени" CanUserResize="False" Width="90"/>
-                    <DataGridTextColumn Binding="{Binding ObtCnt}" ClipboardContentBinding="{x:Null}" Header="КБВ" CanUserResize="False" Width="90"/>
-                    <DataGridTextColumn Binding="{Binding UksCnt}" ClipboardContentBinding="{x:Null}" Header="УКС" CanUserResize="False" Width="90"/>
+                    <DataGridTextColumn Binding="{Binding Name}" ClipboardContentBinding="{x:Null}" Header="Канал" CanUserResize="False" Width="80" CanUserSort="False" CanUserReorder="False"/>
+                    <DataGridTextColumn Binding="{Binding SRCnt}" ClipboardContentBinding="{x:Null}" Header="Запрос статус" CanUserResize="False" Width="90" CanUserSort="False" CanUserReorder="False"/>
+                    <DataGridTextColumn Binding="{Binding DRCnt}" ClipboardContentBinding="{x:Null}" Header="Запрос данных" CanUserResize="False" Width="90" CanUserSort="False" CanUserReorder="False"/>
+                    <DataGridTextColumn Binding="{Binding TimeStampCnt}" ClipboardContentBinding="{x:Null}" Header="Метка времени" CanUserResize="False" Width="90" CanUserSort="False" CanUserReorder="False"/>
+                    <DataGridTextColumn Binding="{Binding ObtCnt}" ClipboardContentBinding="{x:Null}" Header="КБВ" CanUserResize="False" Width="90" CanUserSort="False" CanUserReorder="False"/>
+                    <DataGridTextColumn Binding="{Binding UksCnt}" ClipboardContentBinding="{x:Null}" Header="УКС" CanUserResize="False" Width="90" CanUserSort="False" CanUserReorder="False"/>
                 </DataGrid.Columns>
             </DataGrid>
         </GroupBox>

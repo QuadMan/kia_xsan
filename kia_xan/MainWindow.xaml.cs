@@ -34,7 +34,10 @@ namespace kia_xan
 
             this.Title = SW_CAPTION;// +"  " + SW_VERSION;
 
-            hWin = new HSIWindow(Xsan);
+            hWin = new HSIWindow(ref Xsan);
+
+            //hWin.KVVGrid.DataContext = Xsan.HSIInt.BUKStat;
+            //hWin.BUKGrid.DataContext = Xsan.HSIInt.KVVStat;
 
             LogsClass.Instance.Files[(int)LogsClass.Idx.logOperator].LogText = "Мы загрузились";
 
@@ -47,11 +50,13 @@ namespace kia_xan
         public void timerWork(object sender, EventArgs e)
         {
             TimeLabel.Content = Xsan.eTime.ToString();
-            Xsan.HSIInt.BUKStat[0].UpdateTimeEventData();
-            Xsan.HSIInt.BUKStat[1].UpdateTimeEventData();
-            Xsan.HSIInt.KVVStat[0].UpdateTimeEventData();
-            Xsan.HSIInt.KVVStat[1].UpdateTimeEventData();
-           
+            if (Xsan.Connected) { 
+                Xsan.HSIInt.BUKStat[0].UpdateTimeEventData();
+                Xsan.HSIInt.BUKStat[1].UpdateTimeEventData();
+                Xsan.HSIInt.KVVStat[0].UpdateTimeEventData();
+                Xsan.HSIInt.KVVStat[1].UpdateTimeEventData();
+            }
+
             if (Xsan.Connected)
             {
                 ConnectionLabel.Background = Brushes.LightGreen;
