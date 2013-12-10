@@ -1,4 +1,9 @@
-﻿using System;
+﻿/*
+ * Доработки: - в класс протокола ввести конструктур с нашим логгером
+ *            - доработать класс логгера, чтобы он нормально сбрасывал данные
+ *            - вывести строки в ресурсы
+ */
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,6 +32,17 @@ namespace kia_xan
         public XSAN Xsan;
         private System.Windows.Threading.DispatcherTimer dispatcherTimer;
         HSIWindow hWin;
+
+        public bool? IsCheckBoxChecked
+        {
+            get { return (bool)GetValue(IsCheckBoxCheckedProperty); }
+            set { 
+                SetValue(IsCheckBoxCheckedProperty, value); 
+            }
+        }
+
+        public static readonly DependencyProperty IsCheckBoxCheckedProperty =
+            DependencyProperty.Register("IsCheckBoxChecked", typeof(bool), typeof(MainWindow), new UIPropertyMetadata(false));
 
         public MainWindow()
         {
@@ -108,6 +124,11 @@ namespace kia_xan
             {
                 hWin.Hide();
             }
+        }
+
+        private void AboutButton_Click(object sender, RoutedEventArgs e)
+        {
+            IsCheckBoxChecked = true;
         }
     }
 }

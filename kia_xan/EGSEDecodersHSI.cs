@@ -1,4 +1,23 @@
-﻿using EGSE.Utilites;
+﻿/*
+ * EDGEDecodersHSI.cs
+ * 
+ * Copyright(c) 2013 ИКИ РАН
+ * 
+ * Author: Семенов Александр
+ * Project: EDGE
+ * Module: EDGEDecodersHSI
+ * Comments:
+ *          Класс HSIInterface предназначен для получения статистики по кадрам, принятым по интерфейсу ВСИ.
+ *          Первоначально использовался в проекте КИА КВВ для получения данных от БУК и КВВ
+ *          HSIMessageStruct - общая структура данных на входе декодера
+ *          XXXChannelStruct - структуры описания статистики по каналам (основным или резервным) КВВ и БУК
+ *          XXXStatistics - классы, через которые обновляется статистика (используя функцию Update), статистика доступна 
+ *          через свойство Channels этого класса
+ *          XXXChannel - классы для использования в ObservationCollection в классе отображения         
+ * 
+ */
+
+using EGSE.Utilites;
 using kia_xan;
 using System;
 using System.Collections;
@@ -10,46 +29,68 @@ using System.Runtime.InteropServices;
 
 namespace kia_xan
 {
+    /// <summary>
+    /// Класс декодера данных по ВСИ интерфейсу для КИА КВВ
+    /// </summary>
     public class HSIInterface
     {
-        const int HSI_FRAME_SIZE_BYTES = 496;
-        // описание битов байта управления ВСИ
-        public enum HSI_CTRLS { hcOn, hcCmdChannel, hcDatChannel, hcHz = 4, hcOBT, hcErrReg };
-        private int HSI_DAT_CHANNEL_MASK = 0xC; //1100    
-        ////
-        //const uint HSI_MAIN_CHANNEL_IDX = 1;
-        //const uint HSI_RED_CHANNEL_IDX = 0;
+        /// <summary>
+        /// Статисика принятых кадров по каналам БУК (основному и резервному)
+        /// </summary>
+        public BUKStatistics BUKStat;
+        /// <summary>
+        /// Статистика принятых кадров по каналам КВВ (основному и резервному)
+        /// </summary>
+        public KVVStatistics KVVStat;
 
+        // максимальный размер структуры на вход декодера
+        const int HSI_FRAME_SIZE_BYTES = 496;
+        // описание структуры, приходящей на вход декодера        
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        public struct HSIMessageStruct
+        private struct HSIMessageStruct
         {
             public byte Status;
-            //public fixed byte Time[6];
-             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 6)]
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 6)]
             public byte[] Time;
             public byte Flag;
-             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 2)]
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 2)]
             public byte[] Size;
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = HSI_FRAME_SIZE_BYTES)]
             public byte[] data;
         }
 
-
+        /// <summary>
+        /// Описание статистики по каналу КВВ
+        /// </summary>
         public struct KVVChannelStruct
         {
+            /// <summary>
+            /// Имя канала - основной или резервный
+            /// </summary>
             public string Name;
 
+            // Всего кадров от КВВ принято
             public uint FramesCnt;
+            // Кадров с признаком в статусе ME
             public uint StatusMECnt;
+            // Кадров с признаком в статусе SR
             public uint StatusSRCnt;
+            // Кадров с признаком в статусе BUSY
             public uint StatusBUSYCnt;
+            // Кадров с признаком в статусе "кадр данных"
             public uint StatusDataFramesCnt;
+            // Кадров с признаком ошибки маркера
             public uint ErrInMarkerCnt;
+            // Кадров с признаком ошибки CRC
             public uint ErrInCRCCnt;
+            // Кадров с признаком ошибки стопового бита
             public uint ErrInStopBitCnt;
+            // Кадров с признаком ошибки четности
             public uint ErrInParityCnt;
 
-
+            /// <summary>
+            /// Сброс статистики
+            /// </summary>
             public void Reset()
             {
                 FramesCnt = 0;
@@ -64,16 +105,30 @@ namespace kia_xan
             }
         }
 
+        /// <summary>
+        /// Описание статистики по каналу БУК
+        /// </summary>
         public struct BUKChannelStruct
         {
+            /// <summary>
+            /// Имя канала - основной или резервный
+            /// </summary>
             public string Name;
 
+            // Всего запросов кадров получено
             public uint SRCnt;
+            // Всего запросов данных получено
             public uint DRCnt;
+            // Всего меток времени получено
             public uint TimeStampCnt;
+            // Всего КБВ получено
             public uint OBTCnt;
+            // Всего УКС получено
             public uint UKSCnt;
 
+            /// <summary>
+            /// Сброс статистики
+            /// </summary>
             public void Reset()
             {
                 SRCnt = 0;
@@ -84,9 +139,11 @@ namespace kia_xan
             }
         }
 
-        public class KVVStatistics //: List<KVVChannelStruct>
+        /// <summary>
+        /// Класс статистики по каналам КВВ
+        /// </summary>
+        public class KVVStatistics 
         {
-            public KVVChannelStruct[] Channels; 
             // описание битов байта параметров кадра данных ВСИ
             const int HSI_STATUS_CHANNEL_BIT_MASK = (1 << 6);
             const int HSI_STATUS_MARKER_ERROR_BIT_MASK = (1 << 3);
@@ -99,73 +156,101 @@ namespace kia_xan
             const int HSI_FLAG_ME_BIT_MASK = 1;
             const int HSI_FLAG_SR_BIT_MASK = 2;
 
-            public HSIMessageStruct HSIFrame;
+            /// <summary>
+            /// Два канала - основной и резервный
+            /// </summary>
+            public KVVChannelStruct[] Channels; 
+
+            // Проекция буфера из декодера на структуру данных
+            private HSIMessageStruct _hsiFrame;
+
+            // текущий канал
             private int _curChannelId;
 
+            /// <summary>
+            /// Функция обновления статистики по данным декодера
+            /// </summary>
+            /// <param name="buf">Буфер данных декодера КВВ</param>
             public void Update(byte[] buf)
             {
-                HSIFrame = ByteArrayToStructure.make<HSIMessageStruct>(buf);
+                _hsiFrame = ByteArrayToStructure.make<HSIMessageStruct>(buf);
 
                 _curChannelId = 0;
                 // узнаем, по какому каналу пришли данные
-                if ((HSIFrame.Status & HSI_STATUS_CHANNEL_BIT_MASK) == 0) _curChannelId = 1;
+                if ((_hsiFrame.Status & HSI_STATUS_CHANNEL_BIT_MASK) == 0) _curChannelId = 1;
                 // подсчитаем статистику по текущему каналу
                 Channels[_curChannelId].FramesCnt++;
-                if ((HSIFrame.Status & HSI_STATUS_MARKER_ERROR_BIT_MASK) > 0) Channels[_curChannelId].ErrInMarkerCnt++;
-                if ((HSIFrame.Status & HSI_STATUS_CRC_ERROR_BIT_MASK) > 0) Channels[_curChannelId].ErrInCRCCnt++;
-                if ((HSIFrame.Status & HSI_STATUS_STOPBIT_ERROR_BIT_MASK) > 0) Channels[_curChannelId].ErrInStopBitCnt++;
-                if ((HSIFrame.Status & HSI_STATUS_PARITY_ERROR_BIT_MASK) > 0) Channels[_curChannelId].ErrInParityCnt++;
+                if ((_hsiFrame.Status & HSI_STATUS_MARKER_ERROR_BIT_MASK) > 0) Channels[_curChannelId].ErrInMarkerCnt++;
+                if ((_hsiFrame.Status & HSI_STATUS_CRC_ERROR_BIT_MASK) > 0) Channels[_curChannelId].ErrInCRCCnt++;
+                if ((_hsiFrame.Status & HSI_STATUS_STOPBIT_ERROR_BIT_MASK) > 0) Channels[_curChannelId].ErrInStopBitCnt++;
+                if ((_hsiFrame.Status & HSI_STATUS_PARITY_ERROR_BIT_MASK) > 0) Channels[_curChannelId].ErrInParityCnt++;
 
-                if ((HSIFrame.Flag & HSI_FLAG_BUSY_BIT_MASK) == HSI_FLAG_BUSY_BIT_MASK) Channels[_curChannelId].StatusBUSYCnt++;
-                if ((HSIFrame.Flag & HSI_FLAG_DATA_BIT_MASK) == HSI_FLAG_DATA_BIT_MASK) Channels[_curChannelId].StatusDataFramesCnt++;
-                if ((HSIFrame.Flag & HSI_FLAG_ME_BIT_MASK) == HSI_FLAG_ME_BIT_MASK) Channels[_curChannelId].StatusMECnt++;
-                if ((HSIFrame.Flag & HSI_FLAG_SR_BIT_MASK) == HSI_FLAG_SR_BIT_MASK) Channels[_curChannelId].StatusSRCnt++;
+                if ((_hsiFrame.Flag & HSI_FLAG_BUSY_BIT_MASK) == HSI_FLAG_BUSY_BIT_MASK) Channels[_curChannelId].StatusBUSYCnt++;
+                if ((_hsiFrame.Flag & HSI_FLAG_DATA_BIT_MASK) == HSI_FLAG_DATA_BIT_MASK) Channels[_curChannelId].StatusDataFramesCnt++;
+                if ((_hsiFrame.Flag & HSI_FLAG_ME_BIT_MASK) == HSI_FLAG_ME_BIT_MASK) Channels[_curChannelId].StatusMECnt++;
+                if ((_hsiFrame.Flag & HSI_FLAG_SR_BIT_MASK) == HSI_FLAG_SR_BIT_MASK) Channels[_curChannelId].StatusSRCnt++;
             }
 
+            /// <summary>
+            /// Конструктор статистики канала КВВ
+            /// </summary>
             public KVVStatistics()
-                //: base()
             {
                 Channels = new KVVChannelStruct[2];
                 Channels[0].Name = "Основной";
                 Channels[1].Name = "Резервный";
             }
+
+            /// <summary>
+            /// Функция очистки статистики
+            /// </summary>
+            public void Clear()
+            {
+                Channels[0].Reset();
+                Channels[1].Reset();
+            }
         }
 
-        public class BUKStatistics //: ObservableCollection<BUKChannel>
+        /// <summary>
+        /// Класс статистики по каналам БУК
+        /// </summary>
+        public class BUKStatistics 
         {
-            public BUKChannelStruct[] Channels; 
-
             private const int HSI_SR_FLAG = 3;
             private const int HSI_DR_FLAG = 4;
             private const int HSI_TIMESTAMP_FLAG = 5;
             private const int HSI_OBT_FLAG = 1;
             private const int HSI_UKS_FLAG = 2;
 
-            public HSIMessageStruct HSIFrame;
-            private int _curChannelId;
-            
-            public BUKStatistics()
-                : base()
-            {
-                //Add(new BUKChannel("Основной_БУК"));
-                //Add(new BUKChannel("Резервный_БУК"));
-                Channels = new BUKChannelStruct[2];
-                Channels[0].Name = "Основной";
-                Channels[1].Name = "Резервный";
-            }
-
             /// <summary>
-            ///  Определение делегата обработки ошибок протокола
+            /// Два канала - основной и резервный
             /// </summary>
-            /// <param name="errMsg">класс сообщения, порожденный от MsgBase, описывающиё ошибку</param>
+            public BUKChannelStruct[] Channels;
+
+            // Проекция буфера из декодера на структуру данных
+            private HSIMessageStruct HSIFrame;
+            
+            // текущий канал
+            private int _curChannelId;
+
+           
+            /// <summary>
+            /// Определение делегата обработки УКС
+            /// </summary>
+            /// <param name="buf">Буфер УКС</param>
+            /// <param name="timeBuf">Время в формате EgseTime</param>
             public delegate void onUKSFrameReceivedDelegate(byte[] buf, byte[] timeBuf);
 
             /// <summary>
-            /// Делегат, вызываемый при возникновении ошибки в декодере
+            /// Делегат, вызываемый при получении УКС
             /// </summary>
             public onUKSFrameReceivedDelegate onUKSFrameReceived;
 
-
+            /// <summary>
+            /// Функция обновления статистики по данным декодера
+            /// </summary>
+            /// <param name="buf">Буфер данных</param>
+            /// <param name="bufLen">Длина буфера</param>
             public void Update(byte[] buf, int bufLen)
             {
                 HSIFrame = ByteArrayToStructure.make<HSIMessageStruct>(buf);
@@ -209,26 +294,39 @@ namespace kia_xan
                         break;
                 }
             }
+
+            /// <summary>
+            /// Конструктор статистики каналов БУК
+            /// </summary>
+            public BUKStatistics()
+            {
+                Channels = new BUKChannelStruct[2];
+                Channels[0].Name = "Основной";
+                Channels[1].Name = "Резервный";
+            }
+
+            /// <summary>
+            /// Функция очистки статистики
+            /// </summary>
+            public void Clear()
+            {
+                Channels[0].Reset();
+                Channels[1].Reset();
+            }
         }
 
         /// <summary>
-        /// Байт управления ВСИ
+        /// Конструктор 
         /// </summary>
-        //public BUKControlStruct BUKControl;
-
-        public BUKStatistics BUKStat;
-        public KVVStatistics KVVStat;
         public HSIInterface()
         {
             BUKStat = new BUKStatistics();
             KVVStat = new KVVStatistics();
-
-            //BUKControl.Init();
-
-            //BUKControl.OBTOn = 1;
-            //BUKControl.ErrRegOn = 1;
         }
 
+        /// <summary>
+        /// Класс для доступа к статистике канала КВВ через ObservationCollection
+        /// </summary>
         public class KVVChannel : INotifyPropertyChanged
         {
             public KVVChannelStruct GetData;
@@ -284,7 +382,6 @@ namespace kia_xan
             public void Reset()
             {
                 GetData.Reset();
-                //TimeEventData.Reset();
                 FramesCnt = 0;
                 StatusMECnt = 0;
                 StatusSRCnt = 0;
@@ -297,6 +394,9 @@ namespace kia_xan
             }
         }
 
+        /// <summary>
+        /// Класс для доступа к статистике канала БУК через ObservationCollection
+        /// </summary>
         public class BUKChannel : INotifyPropertyChanged
         {
             public BUKChannelStruct GetData;
@@ -321,9 +421,8 @@ namespace kia_xan
 
             public void UpdateTimeEventData()
             {
-                //Name = GetData.Name;
                 Name = GetData.Name;
-                SRCnt = GetData.SRCnt + 1;
+                SRCnt = GetData.SRCnt;
                 DRCnt = GetData.DRCnt;
                 TimeStampCnt = GetData.TimeStampCnt;
                 ObtCnt = GetData.OBTCnt;
