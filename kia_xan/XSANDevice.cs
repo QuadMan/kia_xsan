@@ -11,54 +11,17 @@ using System.Threading.Tasks;
 
 namespace kia_xan
 {
-     /// <summary>
-     /// Класс логгеров (синглетон)
-     /// </summary>
-    public sealed class LogsClass
-    {
-        private static string[] LogsFiles = new string[5]{ "main.log", "operator.log", "hsi.log", "errors.log", "usb.log" };
-        public enum Idx { logMain, logOperator, logHSI, logErrors, logUSB };
-        
-        private static volatile LogsClass instance;
-        private static object syncRoot = new Object();
-
-        public TxtLoggers Files;
-
-        private LogsClass()
-        { 
-            Files = new TxtLoggers();
-            foreach (string FName in LogsFiles) {
-                Files.AddFile(FName);
-            }
-        }
-
-        public static LogsClass Instance
-        {
-            get
-            {
-                if (instance == null)
-                {
-                    lock (syncRoot)
-                    {
-                        if (instance == null)
-                            instance = new LogsClass();
-                    }
-                }
-
-                return instance;
-            }
-        }
-    }
-
     public class XSANDevice : Device
     {
         private const int TIME_RESET_ADDR = 0x01;
         private const int TIME_DATA_ADDR = 0x02;
         private const int TIME_SET_ADDR = 0x03;
 
-        private const int HSI_BUK_CTRL_ADDR = 0x0A;
-        private const int HSI_KVV_CTRL_ADDR = 0x0D;
-        private const int HSI_UKS_ADDR = 0x0C;
+        private const int POWER_SET_ADDR = 0x05;
+
+        private const int HSI_BUNI_CTRL_ADDR = 0x06;
+        private const int HSI_XSAN_CTRL_ADDR = 0x09;
+        private const int HSI_UKS_ADDR = 0x08;
 
         private byte[] buf;
 
@@ -67,16 +30,16 @@ namespace kia_xan
         {
         }
 
-        public void CmdHSIBUKControl(byte HSIImitControl)
+        public void CmdHSIBUNIControl(byte HSIImitControl)
         {
             buf = new byte[1] { HSIImitControl };
-            base.SendCmd(HSI_BUK_CTRL_ADDR, buf);
+            base.SendCmd(HSI_BUNI_CTRL_ADDR, buf);
         }
 
-        public void CmdHSIKVVControl(byte HSIControl,int frameSize)
+        public void CmdHSIXSANControl(byte HSIControl,int frameSize)
         {
             buf = new byte[3] { HSIControl, (byte)(frameSize >> 8), (byte)frameSize };
-            base.SendCmd(HSI_KVV_CTRL_ADDR, buf);
+            base.SendCmd(HSI_XSAN_CTRL_ADDR, buf);
         }
 
         public void CmdSendTime()
@@ -96,52 +59,76 @@ namespace kia_xan
             base.SendCmd(HSI_UKS_ADDR, UKSBuf);
         }
 
+        public void CmdPowerOnOff(byte turnOn)
+        {
+            turnOn &= 1;
+            base.SendCmd(POWER_SET_ADDR, new byte[1] { turnOn });
+        }
+
     }
 
     public class XSAN //: IDisposable
     {
+
         private const int TIME_ADDR_GET = 0x04;
+        private const int HSI_XSAN_CTRL_GET = 0x09;
+        private const int HSI_XSAN_DATA_GET = 0x0A;
 
-        private const int HSI_BUK_DATA_GET = 0x0B;
-        private const int HSI_KVV_DATA_GET = 0x0E;
-        private const int HSI_KVV_CTRL_GET = 0x0D;
-        private const int HSI_BUK_CTRL_GET = 0x0A;
+        private const int HSI_BUNI_CTRL_GET = 0x06;
+        private const int HSI_BUNI_DATA_GET = 0x07;
+        private const int TM_DATA_GET = 5;
 
-        const string XSANSerial = "KIA_KVV";
+        const string XSANSerial = "KIA_LINA";
+        private ProtocolUSB5E4D _decoder;
+        private FileStream _xsanDataLogStream;
+        private uint _xsanChannelForWriting;
+
         public XSANDevice Device;
-        ProtocolUSB5E4DNoCrc _decoder;
         public bool Connected;
-        private StreamWriter fTxtWriter;
-        private bool disposed = false;
         public string time;
         public EgseTime eTime;
         public HSIInterface HSIInt;
-
-        public ControlValue KVVControl;
-        public ControlValue BUKControl;
+        public XsanTm Tm;
+        public ControlValue XSANControl;
+        public ControlValue BUNIControl;
+        public ControlValue PowerControl;
 
         public XSAN()
         {
-            fTxtWriter = new StreamWriter(AppDomain.CurrentDomain.BaseDirectory + @"\usb_log.txt");
-            fTxtWriter.AutoFlush = true;
-
-            _decoder = new ProtocolUSB5E4DNoCrc(null, fTxtWriter, false, true);// new ProtocolUSB5E4D();
+            _decoder = new ProtocolUSB5E4D(null, LogsClass.Instance.Files[(int)LogsClass.Idx.logUSB], false, true);
             _decoder.GotProtocolMsg += new ProtocolUSBBase.ProtocolMsgEventHandler(onMessageFunc);
             _decoder.GotProtocolError += new ProtocolUSBBase.ProtocolErrorEventHandler(onErrorFunc);
 
+            _xsanDataLogStream = null;
+            _xsanChannelForWriting = 0;
+
             Device = new XSANDevice(XSANSerial, _decoder);
             Device.onNewState = onChangeConnection;
+            //
 
             Connected = false;
             eTime = new EgseTime();
             HSIInt = new HSIInterface();
+            Tm = new XsanTm();
 
-            KVVControl = new ControlValue();
-            BUKControl = new ControlValue();
+            XSANControl = new ControlValue();
+            BUNIControl = new ControlValue();
+            PowerControl = new ControlValue();
         }
 
         public void Dispose()
         {
+        }
+
+        /// <summary>
+        /// Указываем какой файл использовать для записи данных и какой канал
+        /// </summary>
+        /// <param name="fStream"></param>
+        /// <param name="channel"></param>
+        public void SetFileAndChannelForLogXSANData(FileStream fStream, uint channel)
+        {
+            _xsanDataLogStream = fStream;
+            _xsanChannelForWriting = channel;
         }
 
         void onChangeConnection(bool state)
@@ -150,11 +137,16 @@ namespace kia_xan
             if (Connected)
             {
                 Device.CmdSendTime();
-                KVVControl.RefreshGetValue();
-                BUKControl.RefreshGetValue();
+                XSANControl.RefreshGetValue();
+                BUNIControl.RefreshGetValue();
+                PowerControl.RefreshGetValue();
+                //
+                LogsClass.Instance.Files[(int)LogsClass.Idx.logMain].LogText = "КИА XSAN подключен";
             }
-
-
+            else
+            {
+                LogsClass.Instance.Files[(int)LogsClass.Idx.logMain].LogText = "КИА XSAN отключен";
+            }
         }
 
         void onMessageFunc(MsgBase msg)
@@ -167,17 +159,21 @@ namespace kia_xan
                     case TIME_ADDR_GET:
                         Array.Copy(msg1.Data, 0, eTime.data, 0, 6);
                         break;
-                    case HSI_KVV_DATA_GET:
-                        HSIInt.BUKStat.Update(msg1.Data, msg1.DataLen);
+                    case TM_DATA_GET :
+                        Tm.Update(msg1.Data);
+                        PowerControl.GetValue = msg1.Data[6];
                         break;
-                    case HSI_BUK_DATA_GET:
-                        HSIInt.KVVStat.Update(msg1.Data);
+                    case HSI_XSAN_DATA_GET:
+                        HSIInt.XSANStat.Update(msg1.Data, msg1.DataLen);
                         break;
-                    case HSI_BUK_CTRL_GET:
-                        BUKControl.GetValue = msg1.Data[0];
+                    case HSI_BUNI_DATA_GET:
+                        HSIInt.BUNIStat.Update(msg1.Data, _xsanDataLogStream, _xsanChannelForWriting);
                         break;
-                    case HSI_KVV_CTRL_GET:
-                        KVVControl.GetValue = msg1.Data[0];
+                    case HSI_BUNI_CTRL_GET:
+                        BUNIControl.GetValue = msg1.Data[0];
+                        break;
+                    case HSI_XSAN_CTRL_GET:
+                        XSANControl.GetValue = msg1.Data[0];
                         break;
                 }
             }

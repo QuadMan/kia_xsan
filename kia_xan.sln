@@ -5,6 +5,11 @@ VisualStudioVersion = 12.0.21005.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "kia_xan", "kia_xan\kia_xan.csproj", "{6E28977D-B9AD-4AAB-8B38-2FA5D7B25EF7}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{6FB7F2B3-0D7E-4013-A1F5-D5505BDF6079}"
+	ProjectSection(SolutionItems) = preProject
+		kia_xan\XsanLoggers.cs = kia_xan\XsanLoggers.cs
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

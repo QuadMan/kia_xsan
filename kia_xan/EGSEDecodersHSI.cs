@@ -25,6 +25,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.IO;
 using System.Runtime.InteropServices;
 
 namespace kia_xan
@@ -35,13 +36,17 @@ namespace kia_xan
     public class HSIInterface
     {
         /// <summary>
+        /// Количество байт УКС максимальное
+        /// </summary>
+        public const uint HSI_MAX_UKS_BYTES_COUNT = 62;
+        /// <summary>
         /// Статисика принятых кадров по каналам БУК (основному и резервному)
         /// </summary>
-        public BUKStatistics BUKStat;
+        public XSANStatistics XSANStat;
         /// <summary>
         /// Статистика принятых кадров по каналам КВВ (основному и резервному)
         /// </summary>
-        public KVVStatistics KVVStat;
+        public BUNIStatistics BUNIStat;
 
         // максимальный размер структуры на вход декодера
         const int HSI_FRAME_SIZE_BYTES = 496;
@@ -62,7 +67,7 @@ namespace kia_xan
         /// <summary>
         /// Описание статистики по каналу КВВ
         /// </summary>
-        public struct KVVChannelStruct
+        public struct BUNIChannelStruct
         {
             /// <summary>
             /// Имя канала - основной или резервный
@@ -108,7 +113,7 @@ namespace kia_xan
         /// <summary>
         /// Описание статистики по каналу БУК
         /// </summary>
-        public struct BUKChannelStruct
+        public struct XSANChannelStruct
         {
             /// <summary>
             /// Имя канала - основной или резервный
@@ -142,10 +147,10 @@ namespace kia_xan
         /// <summary>
         /// Класс статистики по каналам КВВ
         /// </summary>
-        public class KVVStatistics 
+        public class BUNIStatistics 
         {
             // описание битов байта параметров кадра данных ВСИ
-            const int HSI_STATUS_CHANNEL_BIT_MASK = (1 << 6);
+            const int HSI_STATUS_CHANNEL_BIT_MASK = (1 << 7);
             const int HSI_STATUS_MARKER_ERROR_BIT_MASK = (1 << 3);
             const int HSI_STATUS_CRC_ERROR_BIT_MASK = (1 << 2);
             const int HSI_STATUS_STOPBIT_ERROR_BIT_MASK = (1 << 1);
@@ -159,7 +164,7 @@ namespace kia_xan
             /// <summary>
             /// Два канала - основной и резервный
             /// </summary>
-            public KVVChannelStruct[] Channels; 
+            public BUNIChannelStruct[] Channels; 
 
             // Проекция буфера из декодера на структуру данных
             private HSIMessageStruct _hsiFrame;
@@ -171,13 +176,13 @@ namespace kia_xan
             /// Функция обновления статистики по данным декодера
             /// </summary>
             /// <param name="buf">Буфер данных декодера КВВ</param>
-            public void Update(byte[] buf)
+            public void Update(byte[] buf, FileStream fStream, uint channelForWriting)
             {
                 _hsiFrame = ByteArrayToStructure.make<HSIMessageStruct>(buf);
 
                 _curChannelId = 0;
                 // узнаем, по какому каналу пришли данные
-                if ((_hsiFrame.Status & HSI_STATUS_CHANNEL_BIT_MASK) == 0) _curChannelId = 1;
+                if ((_hsiFrame.Status & HSI_STATUS_CHANNEL_BIT_MASK) > 0) _curChannelId = 1;
                 // подсчитаем статистику по текущему каналу
                 Channels[_curChannelId].FramesCnt++;
                 if ((_hsiFrame.Status & HSI_STATUS_MARKER_ERROR_BIT_MASK) > 0) Channels[_curChannelId].ErrInMarkerCnt++;
@@ -189,14 +194,20 @@ namespace kia_xan
                 if ((_hsiFrame.Flag & HSI_FLAG_DATA_BIT_MASK) == HSI_FLAG_DATA_BIT_MASK) Channels[_curChannelId].StatusDataFramesCnt++;
                 if ((_hsiFrame.Flag & HSI_FLAG_ME_BIT_MASK) == HSI_FLAG_ME_BIT_MASK) Channels[_curChannelId].StatusMECnt++;
                 if ((_hsiFrame.Flag & HSI_FLAG_SR_BIT_MASK) == HSI_FLAG_SR_BIT_MASK) Channels[_curChannelId].StatusSRCnt++;
+
+                // пишем в файл, если файл задан и пришли данные по выбранному каналу
+                if ((fStream != null) && ((_hsiFrame.Flag & HSI_FLAG_DATA_BIT_MASK) == HSI_FLAG_DATA_BIT_MASK) && (_curChannelId == channelForWriting))
+                {
+                    fStream.Write(_hsiFrame.data, 0, HSI_FRAME_SIZE_BYTES);
+                }
             }
 
             /// <summary>
             /// Конструктор статистики канала КВВ
             /// </summary>
-            public KVVStatistics()
+            public BUNIStatistics()
             {
-                Channels = new KVVChannelStruct[2];
+                Channels = new BUNIChannelStruct[2];
                 Channels[0].Name = "Основной";
                 Channels[1].Name = "Резервный";
             }
@@ -214,7 +225,7 @@ namespace kia_xan
         /// <summary>
         /// Класс статистики по каналам БУК
         /// </summary>
-        public class BUKStatistics 
+        public class XSANStatistics 
         {
             private const int HSI_SR_FLAG = 3;
             private const int HSI_DR_FLAG = 4;
@@ -225,7 +236,7 @@ namespace kia_xan
             /// <summary>
             /// Два канала - основной и резервный
             /// </summary>
-            public BUKChannelStruct[] Channels;
+            public XSANChannelStruct[] Channels;
 
             // Проекция буфера из декодера на структуру данных
             private HSIMessageStruct HSIFrame;
@@ -298,9 +309,9 @@ namespace kia_xan
             /// <summary>
             /// Конструктор статистики каналов БУК
             /// </summary>
-            public BUKStatistics()
+            public XSANStatistics()
             {
-                Channels = new BUKChannelStruct[2];
+                Channels = new XSANChannelStruct[2];
                 Channels[0].Name = "Основной";
                 Channels[1].Name = "Резервный";
             }
@@ -320,16 +331,16 @@ namespace kia_xan
         /// </summary>
         public HSIInterface()
         {
-            BUKStat = new BUKStatistics();
-            KVVStat = new KVVStatistics();
+            XSANStat = new XSANStatistics();
+            BUNIStat = new BUNIStatistics();
         }
 
         /// <summary>
         /// Класс для доступа к статистике канала КВВ через ObservationCollection
         /// </summary>
-        public class KVVChannel : INotifyPropertyChanged
+        public class BUNIChannel : INotifyPropertyChanged
         {
-            public KVVChannelStruct GetData;
+            public BUNIChannelStruct GetData;
 
             private string _Name;
             private uint _FramesCnt;
@@ -353,9 +364,10 @@ namespace kia_xan
             public uint ErrInStopBitCnt { get { return _ErrInStopBitCnt; } set { _ErrInStopBitCnt = value; FirePropertyChangedEvent("ErrInStopBitCnt"); } }
             public uint ErrInParityCnt { get { return _ErrInParityCnt; } set { _ErrInParityCnt = value; FirePropertyChangedEvent("ErrInParityCnt"); } }
 
-            public KVVChannel(string chName)
+            public BUNIChannel(string chName)
             {
                 GetData.Name = chName;
+                Name = chName;              // чтобы обновить ObservationCollection
             }
 
             public void UpdateTimeEventData()
@@ -397,9 +409,9 @@ namespace kia_xan
         /// <summary>
         /// Класс для доступа к статистике канала БУК через ObservationCollection
         /// </summary>
-        public class BUKChannel : INotifyPropertyChanged
+        public class XSANChannel : INotifyPropertyChanged
         {
-            public BUKChannelStruct GetData;
+            public XSANChannelStruct GetData;
 
             private string _name;
             private uint _srCnt;
@@ -414,9 +426,10 @@ namespace kia_xan
             public uint ObtCnt { get { return _obtCnt; } set { _obtCnt = value; FirePropertyChangedEvent("ObtCnt"); } }
             public uint UksCnt { get { return _uksCnt; } set { _uksCnt = value; FirePropertyChangedEvent("UksCnt"); } }
 
-            public BUKChannel(string chName)
+            public XSANChannel(string chName)
             {
                 GetData.Name = chName;
+                Name = chName;
             }
 
             public void UpdateTimeEventData()

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -47,9 +48,17 @@ namespace kia_xan
         private System.Windows.Threading.DispatcherTimer dispatcherTimer;
         XSAN _xsan;
 
-        public ObservableCollection<kia_xan.HSIInterface.BUKChannel> BUKCollection = new ObservableCollection<kia_xan.HSIInterface.BUKChannel>();
-        public ObservableCollection<kia_xan.HSIInterface.KVVChannel> KVVCollection = new ObservableCollection<kia_xan.HSIInterface.KVVChannel>();
+        public ObservableCollection<kia_xan.HSIInterface.XSANChannel> XSANCollection = new ObservableCollection<kia_xan.HSIInterface.XSANChannel>();
+        public ObservableCollection<kia_xan.HSIInterface.BUNIChannel> BUNICollection = new ObservableCollection<kia_xan.HSIInterface.BUNIChannel>();
         //public ObservableCollection<string> uksList = new ObservableCollection<string>();
+
+        private bool _canClose = false;
+        FileStream _hsiFramesStream;
+
+        public void CanClose()
+        {
+            _canClose = true;
+        }
 
         public void newUKSFrame(byte[] buf, byte[] timeBuf)
         {
@@ -57,25 +66,26 @@ namespace kia_xan
             time.data = timeBuf;
 
             string uksString = time.ToString()+": "+Converter.ByteArrayToHexStr(buf);
-            UKSListBox.Dispatcher.Invoke(new Action(delegate { UKSListBox.Items.Add(uksString); UKSListBox.ScrollIntoView(uksString); }));
-            
+            UKSListBox.Dispatcher.Invoke(new Action(delegate { UKSListBox.Items.Add(uksString); UKSListBox.ScrollIntoView(uksString); }));            
         }
 
         public HSIWindow(XSAN xxsan)
         {
             InitializeComponent();
             //
-            BUKCollection.Add(new HSIInterface.BUKChannel("Основной"));
-            BUKCollection.Add(new HSIInterface.BUKChannel("Резервный"));
-            KVVCollection.Add(new HSIInterface.KVVChannel("Основной"));
-            KVVCollection.Add(new HSIInterface.KVVChannel("Резервный"));
+            _hsiFramesStream = null;
+            //
+            XSANCollection.Add(new HSIInterface.XSANChannel("Основной"));
+            XSANCollection.Add(new HSIInterface.XSANChannel("Резервный"));
+            BUNICollection.Add(new HSIInterface.BUNIChannel("Основной"));
+            BUNICollection.Add(new HSIInterface.BUNIChannel("Резервный"));
             //
             //UKSListBox.Items.Add("Test string");
             //
             _xsan = xxsan;
-            _xsan.HSIInt.BUKStat.onUKSFrameReceived = newUKSFrame;
-            BUKGrid.DataContext = BUKCollection;
-            KVVGrid.DataContext = KVVCollection;
+            _xsan.HSIInt.XSANStat.onUKSFrameReceived = newUKSFrame;
+            XSANGrid.DataContext = XSANCollection;
+            BUNIGrid.DataContext = BUNICollection;
             //UKSListBox.DataContext = uksList;
 
             dispatcherTimer = new System.Windows.Threading.DispatcherTimer();
@@ -86,19 +96,19 @@ namespace kia_xan
 
         private void UpdateBUKControl()
         {
-            BUKOnCb.IsChecked = (bool)((_xsan.BUKControl.GetValue & 1) == 1);
-            BUKDataChannelCbb.SelectedIndex = (_xsan.BUKControl.GetValue >> 2) & 3;
-            BUKCmdChannelCbb.SelectedIndex = (_xsan.BUKControl.GetValue >> 1) & 1;
+            BUNIOnCb.IsChecked = (bool)((_xsan.BUNIControl.GetValue & 1) == 1);
+            BUNIDataChannelCbb.SelectedIndex = (_xsan.BUNIControl.GetValue >> 2) & 3;
+            BUNICmdChannelCbb.SelectedIndex = (_xsan.BUNIControl.GetValue >> 1) & 1;
             //BUKErrorRegisterCb.IsChecked = (bool)(((_xsan.BUKControl.GetValue >>  4) & 1) == 1);
         }
 
         private void UpdateKVVControl()
         {
-            KVVCmdChannelCbb.SelectedIndex = (_xsan.KVVControl.GetValue & 3);
-            KVVDatChannelCbb.SelectedIndex = ((_xsan.KVVControl.GetValue >> 2) & 3);
-            KVVReadyCb.IsChecked = ((_xsan.KVVControl.GetValue >> 4) & 1) == 1;
-            KVVBusyCb.IsChecked = ((_xsan.KVVControl.GetValue >> 5) & 1) == 1;
-            KVVMECb.IsChecked = ((_xsan.KVVControl.GetValue >> 6) & 1) == 1;
+            XSANCmdChannelCbb.SelectedIndex = (_xsan.XSANControl.GetValue & 3);
+            XSANDatChannelCbb.SelectedIndex = ((_xsan.XSANControl.GetValue >> 2) & 3);
+            XSANReadyCb.IsChecked = ((_xsan.XSANControl.GetValue >> 4) & 1) == 1;
+            XSANBusyCb.IsChecked = ((_xsan.XSANControl.GetValue >> 5) & 1) == 1;
+            XSANMECb.IsChecked = ((_xsan.XSANControl.GetValue >> 6) & 1) == 1;
         }
 
         public void timerWork(object sender, EventArgs e)
@@ -107,69 +117,82 @@ namespace kia_xan
             {
                 for (int i = 0; i < 2; i++)
                 {
-                    BUKCollection[i].SRCnt = _xsan.HSIInt.BUKStat.Channels[i].SRCnt;
-                    BUKCollection[i].ObtCnt = _xsan.HSIInt.BUKStat.Channels[i].OBTCnt;
-                    BUKCollection[i].DRCnt = _xsan.HSIInt.BUKStat.Channels[i].DRCnt;
-                    BUKCollection[i].TimeStampCnt = _xsan.HSIInt.BUKStat.Channels[i].TimeStampCnt;
-                    BUKCollection[i].UksCnt = _xsan.HSIInt.BUKStat.Channels[i].UKSCnt;
+                    XSANCollection[i].SRCnt = _xsan.HSIInt.XSANStat.Channels[i].SRCnt;
+                    XSANCollection[i].ObtCnt = _xsan.HSIInt.XSANStat.Channels[i].OBTCnt;
+                    XSANCollection[i].DRCnt = _xsan.HSIInt.XSANStat.Channels[i].DRCnt;
+                    XSANCollection[i].TimeStampCnt = _xsan.HSIInt.XSANStat.Channels[i].TimeStampCnt;
+                    XSANCollection[i].UksCnt = _xsan.HSIInt.XSANStat.Channels[i].UKSCnt;
 
-                    KVVCollection[i].ErrInCRCCnt = _xsan.HSIInt.KVVStat.Channels[i].ErrInCRCCnt;
-                    KVVCollection[i].ErrInMarkerCnt = _xsan.HSIInt.KVVStat.Channels[i].ErrInMarkerCnt;
-                    KVVCollection[i].ErrInParityCnt = _xsan.HSIInt.KVVStat.Channels[i].ErrInParityCnt;
-                    KVVCollection[i].ErrInStopBitCnt = _xsan.HSIInt.KVVStat.Channels[i].ErrInStopBitCnt;
-                    KVVCollection[i].FramesCnt = _xsan.HSIInt.KVVStat.Channels[i].FramesCnt;
-                    KVVCollection[i].StatusBUSYCnt = _xsan.HSIInt.KVVStat.Channels[i].StatusBUSYCnt;
-                    KVVCollection[i].StatusDataFramesCnt = _xsan.HSIInt.KVVStat.Channels[i].StatusDataFramesCnt;
-                    KVVCollection[i].StatusMECnt = _xsan.HSIInt.KVVStat.Channels[i].StatusMECnt;
-                    KVVCollection[i].StatusSRCnt = _xsan.HSIInt.KVVStat.Channels[i].StatusSRCnt;
+                    BUNICollection[i].ErrInCRCCnt = _xsan.HSIInt.BUNIStat.Channels[i].ErrInCRCCnt;
+                    BUNICollection[i].ErrInMarkerCnt = _xsan.HSIInt.BUNIStat.Channels[i].ErrInMarkerCnt;
+                    BUNICollection[i].ErrInParityCnt = _xsan.HSIInt.BUNIStat.Channels[i].ErrInParityCnt;
+                    BUNICollection[i].ErrInStopBitCnt = _xsan.HSIInt.BUNIStat.Channels[i].ErrInStopBitCnt;
+                    BUNICollection[i].FramesCnt = _xsan.HSIInt.BUNIStat.Channels[i].FramesCnt;
+                    BUNICollection[i].StatusBUSYCnt = _xsan.HSIInt.BUNIStat.Channels[i].StatusBUSYCnt;
+                    BUNICollection[i].StatusDataFramesCnt = _xsan.HSIInt.BUNIStat.Channels[i].StatusDataFramesCnt;
+                    BUNICollection[i].StatusMECnt = _xsan.HSIInt.BUNIStat.Channels[i].StatusMECnt;
+                    BUNICollection[i].StatusSRCnt = _xsan.HSIInt.BUNIStat.Channels[i].StatusSRCnt;
                 }
             }
 
             // проверим, были ли изменены элементы управления, нужно обновить
-            if (_xsan.BUKControl.TimerTick() == EGSE.Utilites.ControlValue.ValueState.vsChanged)
+            if (_xsan.BUNIControl.TimerTick() == EGSE.Utilites.ControlValue.ValueState.vsChanged)
             {
                 UpdateBUKControl();
             }
-            if (_xsan.KVVControl.TimerTick() == EGSE.Utilites.ControlValue.ValueState.vsChanged)
+            if (_xsan.XSANControl.TimerTick() == EGSE.Utilites.ControlValue.ValueState.vsChanged)
             {
                 UpdateKVVControl();
             }
+            //
+            if ((bool)WriteDataCheckBox.IsChecked)
+            {
+                LogFileNameLabel.Content = System.IO.Path.GetFileName(_hsiFramesStream.Name);
+                LogFileSizeLabel.Content = Converter.FileSizeToStr((ulong)_hsiFramesStream.Length);
+            }
         }
 
-        private void GetKVVControl()
+        private void GetXSANControl()
         {
             if (!this.IsInitialized) return;
 
-            int tmpKVVControl = 0;
-            tmpKVVControl |= KVVCmdChannelCbb.SelectedIndex;
-            tmpKVVControl |= (KVVDatChannelCbb.SelectedIndex << 2);
-            if ((bool)KVVReadyCb.IsChecked) { tmpKVVControl |= (1 << 4); }
-            if ((bool)KVVBusyCb.IsChecked) { tmpKVVControl |= (1 << 5); }
-            if ((bool)KVVMECb.IsChecked) { tmpKVVControl |= (1 << 6); }
+            int tmpXSANControl = 0;
+            tmpXSANControl = XSANCmdChannelCbb.SelectedIndex;
+            tmpXSANControl |= (XSANDatChannelCbb.SelectedIndex << 2);
+            if ((bool)XSANReadyCb.IsChecked) { tmpXSANControl |= (1 << 4); }
+            if ((bool)XSANBusyCb.IsChecked) { tmpXSANControl |= (1 << 5); }
+            if ((bool)XSANMECb.IsChecked) { tmpXSANControl |= (1 << 6); }
 
-            _xsan.KVVControl.SetValue = tmpKVVControl;
-            _xsan.Device.CmdHSIKVVControl((byte)_xsan.KVVControl.SetValue, 100);
+            _xsan.XSANControl.SetValue = tmpXSANControl;
+            _xsan.Device.CmdHSIXSANControl((byte)_xsan.XSANControl.SetValue, 100);
         }
 
-        private void GetBUKControl()
+        private void GetBUNIControl()
         {
             if (!this.IsInitialized) return;
 
             int tmpBUKControl = 0;
 
-            if ((bool)BUKOnCb.IsChecked) { tmpBUKControl = 1; }
-            tmpBUKControl |= BUKCmdChannelCbb.SelectedIndex << 1;
-            tmpBUKControl |= BUKDataChannelCbb.SelectedIndex << 2;
+            if ((bool)BUNIOnCb.IsChecked) { tmpBUKControl = 1; }
+            tmpBUKControl |= BUNICmdChannelCbb.SelectedIndex << 1;
+            tmpBUKControl |= BUNIDataChannelCbb.SelectedIndex << 2;
             //if ((bool)BUKErrorRegisterCb.IsChecked) { tmpBUKControl |= (1 << 4); }
 
-            _xsan.BUKControl.SetValue = tmpBUKControl;
-            _xsan.Device.CmdHSIBUKControl((byte)_xsan.BUKControl.SetValue);
+            tmpBUKControl |= (1 << 4); // бит включения герцовой метки
+            _xsan.BUNIControl.SetValue = tmpBUKControl;
+            _xsan.Device.CmdHSIBUNIControl((byte)_xsan.BUNIControl.SetValue);
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             if (UksStrTextBox.Text == "") return;
-
+            // проверяем количество байт
+            if (UksStrTextBox.Text.Split(' ').Length > HSIInterface.HSI_MAX_UKS_BYTES_COUNT)
+            {
+                MessageBox.Show("Длина УКС не должна быть больше " + HSIInterface.HSI_MAX_UKS_BYTES_COUNT.ToString());
+                return;
+            }
+            //
             byte[] UKSData;
             try
             {
@@ -182,49 +205,102 @@ namespace kia_xan
             finally {
                 UKSData = null;
             }
-    //        byte[] UKSData = new byte[5]{0x01,0x03,0x05,0x06,0xAA};
-
         }
 
         private void KVVReadyCb_Click(object sender, RoutedEventArgs e)
         {
-            GetKVVControl();
+            GetXSANControl();
         }
 
         private void BUKErrorRegisterCb_Click(object sender, RoutedEventArgs e)
         {
-            GetBUKControl();
+            GetBUNIControl();
         }
 
         private void BUKDataChannelCbb_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            GetBUKControl();
+            GetBUNIControl();
         }
 
         private void GetBUKControl(object sender, SelectionChangedEventArgs e)
         {
-            GetBUKControl();
+            GetBUNIControl();
         }
 
-        private void KVVCmdChannelCbb_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void XSANCmdChannelCbb_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            GetKVVControl();
+            GetXSANControl();
         }
 
         private void KVVDatChannelCbb_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            GetKVVControl();
+            GetXSANControl();
         }
 
         private void BUKCmdChannelCbb_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            GetBUKControl();
+            GetBUNIControl();
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            _xsan.HSIInt.BUKStat.Clear();
-            _xsan.HSIInt.KVVStat.Clear();
+            _xsan.HSIInt.BUNIStat.Clear();
+            _xsan.HSIInt.XSANStat.Clear();
+        }
+
+        private void Window_Closing(object sender, CancelEventArgs e)
+        {
+            if (_canClose)
+            {
+                e.Cancel = false;
+            }
+            else {
+                e.Cancel = true;
+                Hide();
+            }
+        }
+
+        private void WriteDataCheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            if ((bool)WriteDataCheckBox.IsChecked)
+            {
+                _hsiFramesStream = new FileStream("test.dat", System.IO.FileMode.Create);
+                LogFileNameLabel.Visibility = Visibility.Visible;
+                LogFileSizeLabel.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                if (_hsiFramesStream != null)
+                {
+                    _hsiFramesStream.Close();
+                    _hsiFramesStream = null;
+                }
+                LogFileNameLabel.Visibility = Visibility.Hidden;
+                LogFileSizeLabel.Visibility = Visibility.Hidden;
+            }
+            // выбираем, по какому каналу записываем данные (по комбобоксу выбора приема данных)
+            uint selectedChannel = 0;
+            switch (BUNIDataChannelCbb.SelectedIndex) {
+                case 1:selectedChannel = 0;
+                    break;
+                case 2: selectedChannel = 1;
+                    break;
+                case 3 :
+                    selectedChannel = 0;
+                    break;
+                default :
+                    selectedChannel = 0;
+                    break;
+            }
+            _xsan.SetFileAndChannelForLogXSANData(_hsiFramesStream, selectedChannel);
+        }
+
+        private void mouseLoggerEvent(object sender, MouseButtonEventArgs e)
+        {
+            string logEvent = Converter.ElementClicked(e);
+            if (logEvent != null) {
+                LogsClass.Instance.Files[(int)LogsClass.Idx.logOperator].LogText = logEvent; 
+            }
         }
     }
 }

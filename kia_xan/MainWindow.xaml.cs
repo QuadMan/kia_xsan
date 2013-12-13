@@ -1,7 +1,10 @@
-﻿/*
- * Доработки: - в класс протокола ввести конструктур с нашим логгером
+﻿using EGSE.Utilites;
+using EGSE.Utilites.ADC;
+/*
+ * Доработки: + в класс протокола ввести конструктур с нашим логгером
  *            - доработать класс логгера, чтобы он нормально сбрасывал данные
  *            - вывести строки в ресурсы
+ *            - запоминать положение окон
  */
 using System;
 using System.Collections;
@@ -26,44 +29,144 @@ namespace kia_xan
     /// </summary>
     public partial class MainWindow : Window
     {
-        public const string SW_CAPTION = "КИА КВВ";
-        const string SW_VERSION = "0.0.1.0";
+        public const string SW_CAPTION = "КИА XSAN";
+        private const string SW_VERSION = "0.0.1.0";
+        private const string DEV_NAME = "БИ КИА XSAN";
 
-        public XSAN Xsan;
-        private System.Windows.Threading.DispatcherTimer dispatcherTimer;
-        HSIWindow hWin;
+        private XSAN Xsan;
+        private HSIWindow hsiWin;
 
-        public bool? IsCheckBoxChecked
+        private void InitAll()
         {
-            get { return (bool)GetValue(IsCheckBoxCheckedProperty); }
-            set { 
-                SetValue(IsCheckBoxCheckedProperty, value); 
+            Xsan = new XSAN();
+        }
+
+        private void CloseAll()
+        {
+            hsiWin.CanClose();
+            hsiWin.Close();
+            Xsan.Device.finishAll();
+        }
+
+        private void OnTimerWork()
+        {
+            // выведем значения АЦП
+            try
+            {
+                U27VLabel.Content = Xsan.Tm.Adc.GetValue(XsanTm.ADC_CH_27V);
+            }
+            catch (ADCException adcE)
+            {
+                U27VLabel.Content = "---";
+            }
+            try
+            {
+                UXSANLabel.Content = Xsan.Tm.Adc.GetValue(XsanTm.ADC_CH_U);
+            }
+            catch (ADCException adcE)
+            {
+                UXSANLabel.Content = "---";
+            }
+            try
+            {
+                IXSANLabel.Content = Xsan.Tm.Adc.GetValue(XsanTm.ADC_CH_I);
+            }
+            catch (ADCException adcE)
+            {
+                IXSANLabel.Content = "---";
+            }
+            // Индикация питания
+            if (Xsan.Tm.IsPowerOn)
+            {
+                PowerLabel.Content = "Питание ВКЛ";
+                PowerLabel.Background = Brushes.LightGreen;
+                if ((string)PwrOnOffBtn.Content == "ВКЛ ПИТАНИЕ")
+                {
+                    PwrOnOffBtn.Content = "ВЫКЛ ПИТАНИЕ";
+                }
+            }
+            else
+            {
+                PowerLabel.Content = "Питание ВЫКЛ";
+                PowerLabel.Background = Brushes.Red;
+                if ((string)PwrOnOffBtn.Content == "ВЫКЛ ПИТАНИЕ")
+                {
+                    PwrOnOffBtn.Content = "ВКЛ ПИТАНИЕ";
+                }
             }
         }
 
-        public static readonly DependencyProperty IsCheckBoxCheckedProperty =
-            DependencyProperty.Register("IsCheckBoxChecked", typeof(bool), typeof(MainWindow), new UIPropertyMetadata(false));
+        /// <summary>
+        /// Панель управления, окно "Управление ВСИ"
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void HSIControlCb_Click(object sender, RoutedEventArgs e)
+        {
+            if ((bool)HSIControlCb.IsChecked)
+            {
+                hsiWin.Owner = Window.GetWindow(this);
+                hsiWin.Show();
+            }
+            else
+            {
+                hsiWin.Hide();
+            }
+        }
+
+        /// <summary>
+        /// Кнопка управления питанием
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            if (Xsan.Tm.IsPowerOn)
+            {
+                Xsan.PowerControl.SetValue = 0;
+            }
+            else
+            {
+                Xsan.PowerControl.SetValue = 1;
+            }
+            Xsan.Device.CmdPowerOnOff((byte)Xsan.PowerControl.SetValue);
+        }
+
+        /// <summary>
+        /// Скрытие телеметрической информации
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void StackPanel_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ClickCount == 2)
+            {
+                if (TMGrid.Visibility == System.Windows.Visibility.Visible) {
+                    TMGrid.Visibility = System.Windows.Visibility.Hidden;
+                }
+                else {
+                    TMGrid.Visibility = System.Windows.Visibility.Visible;
+                }
+            }
+        }
+
+        /*********************************************************************************************************
+         * 
+         * СТАНДАРТНЫЕ ОБРАБОТЧИКИ
+         * 
+         * *******************************************************************************************************/
+        private System.Windows.Threading.DispatcherTimer dispatcherTimer;
+        private XsanAbout aboutWin;
 
         public MainWindow()
         {
             InitializeComponent();
-            //uint n = 0;
-            //BitArray ba = new BitArray(10);
-            //if (ba[0]) {
-            //    new = 1;
-            //}
-
-
-            Xsan = new XSAN();
-
             this.Title = SW_CAPTION;// +"  " + SW_VERSION;
 
-            hWin = new HSIWindow(Xsan);
+            InitAll();
+            CreateAllWindows();
 
-            //hWin.KVVGrid.DataContext = Xsan.HSIInt.BUKStat;
-            //hWin.BUKGrid.DataContext = Xsan.HSIInt.KVVStat;
-
-            LogsClass.Instance.Files[(int)LogsClass.Idx.logOperator].LogText = "Мы загрузились";
+            LogsClass.Instance.Files[(int)LogsClass.Idx.logMain].LogText = "Программа " + SW_VERSION + " загрузилась";
 
             dispatcherTimer = new System.Windows.Threading.DispatcherTimer();
             dispatcherTimer.Tick += new EventHandler(timerWork);
@@ -71,37 +174,63 @@ namespace kia_xan
             dispatcherTimer.Start();
         }
 
-        public void timerWork(object sender, EventArgs e)
+        private void CreateAllWindows()
         {
-            TimeLabel.Content = Xsan.eTime.ToString();
+            hsiWin = new HSIWindow(Xsan);
 
+            AppSettings.LoadWindow((Window)hsiWin);
+            AppSettings.LoadWindow(Window.GetWindow(this));
+            string powerLabelVisible = AppSettings.Load("PowerLabel");
+            if (powerLabelVisible != null)
+            {
+                switch (powerLabelVisible)
+                {
+                    case "Visible" :
+                        TMGrid.Visibility = System.Windows.Visibility.Visible;
+                        break;
+                    case "Hidden" :
+                        TMGrid.Visibility = System.Windows.Visibility.Hidden;
+                        break;
+                    default :
+                        TMGrid.Visibility = System.Windows.Visibility.Visible;
+                        break;
+                }
+            }
+        }
+
+        private void SaveAllWindows()
+        {
+            AppSettings.SaveWindow((Window)hsiWin);
+            AppSettings.SaveWindow(Window.GetWindow(this));
+            AppSettings.Save("PowerLabel", Convert.ToString(TMGrid.Visibility));
+        }
+
+        private void timerWork(object sender, EventArgs e)
+        {
+            OnTimerWork();
+            // индикация подключения
+            TimeLabel.Content = Xsan.eTime.ToString();
             if (Xsan.Connected)
             {
                 ConnectionLabel.Background = Brushes.LightGreen;
-                ConnectionLabel.Content = "Прибор подсоединен";
+                ConnectionLabel.Content = DEV_NAME + " подключен";
             }
             else
             {
                 ConnectionLabel.Background = Brushes.Red;
-                ConnectionLabel.Content = "Прибор отключен";
+                ConnectionLabel.Content = DEV_NAME + " отключен";
             }
-            SpeedLabel.Content = Xsan.Device.speed.ToString() + " [" + Xsan.Device.globalBufSize.ToString() + "]";
+            SpeedLabel.Content = Converter.SpeedToStr(Xsan.Device.speed) + " [" + Xsan.Device.globalBufSize.ToString() + "]";
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            hWin.Close();
-            Xsan.Device.finishAll();
-            LogsClass.Instance.Files[(int)LogsClass.Idx.logOperator].LogText = "Мы выходим...";
+            SaveAllWindows();
+            //
+            CloseAll();
+            //
+            LogsClass.Instance.Files[(int)LogsClass.Idx.logMain].LogText = "Программа завершена";
             LogsClass.Instance.Files.FlushAll();
-        }
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            //Xsan.Device.CmdHSIControl(1);
-            //Xsan.Device.CmdHSIImitControl(0x10);
-
-            hWin.Show();
         }
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
@@ -109,26 +238,21 @@ namespace kia_xan
             Application.Current.Shutdown();
         }
 
-        private void CheckBox_Checked(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-        private void HSIControlCb_Click(object sender, RoutedEventArgs e)
-        {
-            if ((bool)HSIControlCb.IsChecked)
-            {
-                hWin.Show();
-            }
-            else
-            {
-                hWin.Hide();
-            }
-        }
-
         private void AboutButton_Click(object sender, RoutedEventArgs e)
         {
-            IsCheckBoxChecked = true;
+            aboutWin = new XsanAbout();
+            aboutWin.Owner = Window.GetWindow(this);
+            aboutWin.ShowDialog();
         }
+
+        private void mouseLoggerEvent(object sender, MouseButtonEventArgs e)
+        {
+            string logEvent = Converter.ElementClicked(e);
+            if (logEvent != null)
+            {
+                LogsClass.Instance.Files[(int)LogsClass.Idx.logOperator].LogText = logEvent;
+            }
+        }
+
     }
 }
