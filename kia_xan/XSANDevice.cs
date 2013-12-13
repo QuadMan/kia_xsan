@@ -8,17 +8,20 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace kia_xan
 {
+    /// <summary>
+    /// Прописываются команды управления прибором по USB
+    /// </summary>
     public class XSANDevice : Device
     {
         private const int TIME_RESET_ADDR = 0x01;
         private const int TIME_DATA_ADDR = 0x02;
         private const int TIME_SET_ADDR = 0x03;
-
+        //
         private const int POWER_SET_ADDR = 0x05;
-
         private const int HSI_BUNI_CTRL_ADDR = 0x06;
         private const int HSI_XSAN_CTRL_ADDR = 0x09;
         private const int HSI_UKS_ADDR = 0x08;
@@ -42,18 +45,6 @@ namespace kia_xan
             base.SendCmd(HSI_XSAN_CTRL_ADDR, buf);
         }
 
-        public void CmdSendTime()
-        {
-            EgseTime time = new EgseTime();
-            time.Encode();
-
-            buf = new byte[1]{1};
-
-            base.SendCmd(TIME_RESET_ADDR, buf);
-            base.SendCmd(TIME_DATA_ADDR, time.data);
-            base.SendCmd(TIME_SET_ADDR, buf);
-        }
-
         public void CmdSendUKS(byte[] UKSBuf)
         {
             base.SendCmd(HSI_UKS_ADDR, UKSBuf);
@@ -65,15 +56,30 @@ namespace kia_xan
             base.SendCmd(POWER_SET_ADDR, new byte[1] { turnOn });
         }
 
+        /// <summary>
+        /// Стандарная команда установки времени
+        /// </summary>
+        public void CmdSendTime()
+        {
+            EgseTime time = new EgseTime();
+            time.Encode();
+
+            buf = new byte[1] { 1 };
+
+            base.SendCmd(TIME_RESET_ADDR, buf);
+            base.SendCmd(TIME_DATA_ADDR, time.data);
+            base.SendCmd(TIME_SET_ADDR, buf);
+        }
     }
 
-    public class XSAN //: IDisposable
+    /// <summary>
+    /// Общий объект, позволяющий управлять прибором (принимать данные, выдавать команды)
+    /// </summary>
+    public class XSAN
     {
-
         private const int TIME_ADDR_GET = 0x04;
         private const int HSI_XSAN_CTRL_GET = 0x09;
         private const int HSI_XSAN_DATA_GET = 0x0A;
-
         private const int HSI_BUNI_CTRL_GET = 0x06;
         private const int HSI_BUNI_DATA_GET = 0x07;
         private const int TM_DATA_GET = 5;
@@ -179,9 +185,16 @@ namespace kia_xan
             }
         }
 
+        /// <summary>
+        /// Обработчик ошибок протокола декодера USB
+        /// </summary>
+        /// <param name="errMsg"></param>
         void onErrorFunc(MsgBase errMsg)
         {
+            ProtocolErrorEventArgs msg = errMsg as ProtocolErrorEventArgs;
+            string bufferStr = Converter.ByteArrayToHexStr(msg.Data);
 
+            LogsClass.Instance.Files[(int)LogsClass.Idx.logErrors].LogText = msg.Msg+" ("+bufferStr+", на позиции: "+msg.ErrorPos.ToString()+")";
         }
     }
 }

@@ -11,6 +11,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -34,11 +35,14 @@ namespace kia_xan
         private const string DEV_NAME = "БИ КИА XSAN";
 
         private XSAN Xsan;
-        private HSIWindow hsiWin;
+        public HSIWindow hsiWin;
 
         private void InitAll()
         {
             Xsan = new XSAN();
+            Xsan.XSANControl.AddProperty(hsiWin.XSANReadyCb, 4, 1);
+            Xsan.XSANControl.AddProperty(hsiWin.XSANBusyCb, 5, 1);
+            Xsan.XSANControl.AddProperty(hsiWin.XSANMECb, 6, 1);
         }
 
         private void CloseAll()
@@ -167,7 +171,7 @@ namespace kia_xan
             CreateAllWindows();
 
             LogsClass.Instance.Files[(int)LogsClass.Idx.logMain].LogText = "Программа " + SW_VERSION + " загрузилась";
-
+            
             dispatcherTimer = new System.Windows.Threading.DispatcherTimer();
             dispatcherTimer.Tick += new EventHandler(timerWork);
             dispatcherTimer.Interval = new TimeSpan(0, 0, 1);
@@ -247,7 +251,7 @@ namespace kia_xan
 
         private void mouseLoggerEvent(object sender, MouseButtonEventArgs e)
         {
-            string logEvent = Converter.ElementClicked(e);
+            string logEvent = EventClickToString.ElementClicked(e);
             if (logEvent != null)
             {
                 LogsClass.Instance.Files[(int)LogsClass.Idx.logOperator].LogText = logEvent;

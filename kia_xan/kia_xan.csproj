@@ -119,6 +119,9 @@
     <Compile Include="..\..\..\..\CLASSES\ConsoleApplication1\EGSEUSBFTDI.cs">
       <Link>EGSEUSBFTDI.cs</Link>
     </Compile>
+    <Compile Include="..\..\..\..\CLASSES\ConsoleApplication1\EGSEUtilitesEvent.cs">
+      <Link>EGSEUtilitesEvent.cs</Link>
+    </Compile>
     <Compile Include="..\..\..\..\CLASSES\ConsoleApplication1\EGSEUtilitesTextlog.cs">
       <Link>EGSEUtilitesTextlog.cs</Link>
     </Compile>

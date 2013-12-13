@@ -297,7 +297,7 @@ namespace kia_xan
 
         private void mouseLoggerEvent(object sender, MouseButtonEventArgs e)
         {
-            string logEvent = Converter.ElementClicked(e);
+            string logEvent = EventClickToString.ElementClicked(e);
             if (logEvent != null) {
                 LogsClass.Instance.Files[(int)LogsClass.Idx.logOperator].LogText = logEvent; 
             }
