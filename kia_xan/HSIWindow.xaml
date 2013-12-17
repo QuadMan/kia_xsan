@@ -14,17 +14,17 @@
         </Grid.RowDefinitions>
         <GroupBox Header="Имитатор БУНИ" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Height="127" Width="224" Grid.Row="0">
             <StackPanel Margin="0">
-                <ComboBox x:Name="BUNICmdChannelCbb" SelectedIndex="0" Margin="5" SelectionChanged="BUKCmdChannelCbb_SelectionChanged">
+                <ComboBox x:Name="BUNICmdChannelCbb" SelectedIndex="0" Margin="5">
                     <ComboBoxItem Content="Команды по основнову каналу"/>
                     <ComboBoxItem Content="Команды по резервному каналу"/>
                 </ComboBox>
-                <ComboBox x:Name="BUNIDataChannelCbb" SelectedIndex="0" Margin="5" SelectionChanged="BUKDataChannelCbb_SelectionChanged">
+                <ComboBox x:Name="BUNIDataChannelCbb" SelectedIndex="0" Margin="5">
                     <ComboBoxItem Content="Данные отключены"/>
                     <ComboBoxItem Content="Данные по основному каналу"/>
                     <ComboBoxItem Content="Данные по резервному каналу"/>
                     <ComboBoxItem Content="Данные по всем каналам"/>
                 </ComboBox>
-                <CheckBox x:Name="BUNIOnCb" Content="Включить" Margin="5" Click="BUKErrorRegisterCb_Click"/>
+                <CheckBox x:Name="BUNIOnCb" Content="Включить" Margin="5"/>
             </StackPanel>
         </GroupBox>
         <GroupBox Header="Данные от имитатора БУНИ" HorizontalAlignment="Left" Margin="239,10,0,0" VerticalAlignment="Top" Height="92" Width="557" Grid.Row="0">
@@ -63,21 +63,21 @@
         </Grid>
         <GroupBox Header="Имитатор XSAN" HorizontalAlignment="Left" Margin="10,10,0,-1" VerticalAlignment="Top" Height="163" Width="224" Grid.Row="1">
             <StackPanel Margin="0">
-                <ComboBox x:Name="XSANCmdChannelCbb" SelectedIndex="0" Margin="5" SelectionChanged="XSANCmdChannelCbb_SelectionChanged">
+                <ComboBox x:Name="XSANCmdChannelCbb" SelectedIndex="0" Margin="5">
                     <ComboBoxItem Content="Команды отключены"/>
                     <ComboBoxItem Content="Команды по основному каналу"/>
                     <ComboBoxItem Content="Команды по резервному каналу"/>
                     <ComboBoxItem Content="Команды по обоим каналам"/>
                 </ComboBox>
-                <ComboBox x:Name="XSANDatChannelCbb" SelectedIndex="0" Margin="5" SelectionChanged="KVVDatChannelCbb_SelectionChanged">
+                <ComboBox x:Name="XSANDatChannelCbb" SelectedIndex="0" Margin="5">
                     <ComboBoxItem Content="Данные отключены"/>
                     <ComboBoxItem Content="Данные по основному каналу"/>
                     <ComboBoxItem Content="Данные по резервному каналу"/>
                     <ComboBoxItem Content="Данные по всем каналам"/>
                 </ComboBox>
-                <CheckBox x:Name="XSANReadyCb" Content="Готов" Margin="5" Click="KVVReadyCb_Click"/>
-                <CheckBox x:Name="XSANBusyCb" Content="Статус BUSY" Margin="5" Click="KVVReadyCb_Click"/>
-                <CheckBox x:Name="XSANMECb" Content="Статус ME" Margin="5" Click="KVVReadyCb_Click"/>
+                <CheckBox x:Name="XSANReadyCb" Content="Готов" Margin="5"/>
+                <CheckBox x:Name="XSANBusyCb" Content="Статус BUSY" Margin="5"/>
+                <CheckBox x:Name="XSANMECb" Content="Статус ME" Margin="5"/>
             </StackPanel>
         </GroupBox>
         <Button Content="Очистить всю статистику" HorizontalAlignment="Left" Margin="643,126,0,0" VerticalAlignment="Top" Width="147" Height="45" Grid.Row="1" Click="Button_Click_1"/>

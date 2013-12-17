@@ -67,6 +67,8 @@ namespace kia_xan
 
             string uksString = time.ToString()+": "+Converter.ByteArrayToHexStr(buf);
             UKSListBox.Dispatcher.Invoke(new Action(delegate { UKSListBox.Items.Add(uksString); UKSListBox.ScrollIntoView(uksString); }));            
+            //
+            LogsClass.Instance.Files[(int)LogsClass.Idx.logHSI].LogText = "УКС: " + uksString;
         }
 
         public HSIWindow(XSAN xxsan)
@@ -134,16 +136,6 @@ namespace kia_xan
                     BUNICollection[i].StatusSRCnt = _xsan.HSIInt.BUNIStat.Channels[i].StatusSRCnt;
                 }
             }
-
-            // проверим, были ли изменены элементы управления, нужно обновить
-            if (_xsan.BUNIControl.TimerTick() == EGSE.Utilites.ControlValue.ValueState.vsChanged)
-            {
-                UpdateBUKControl();
-            }
-            if (_xsan.XSANControl.TimerTick() == EGSE.Utilites.ControlValue.ValueState.vsChanged)
-            {
-                UpdateKVVControl();
-            }
             //
             if ((bool)WriteDataCheckBox.IsChecked)
             {
@@ -154,6 +146,7 @@ namespace kia_xan
 
         private void GetXSANControl()
         {
+            /*
             if (!this.IsInitialized) return;
 
             int tmpXSANControl = 0;
@@ -164,11 +157,13 @@ namespace kia_xan
             if ((bool)XSANMECb.IsChecked) { tmpXSANControl |= (1 << 6); }
 
             _xsan.XSANControl.SetValue = tmpXSANControl;
-            _xsan.Device.CmdHSIXSANControl((byte)_xsan.XSANControl.SetValue, 100);
+            _xsan.Device.CmdHSIXSANControl((byte)_xsan.XSANControl.SetValue);
+             */
         }
 
         private void GetBUNIControl()
         {
+            /*
             if (!this.IsInitialized) return;
 
             int tmpBUKControl = 0;
@@ -181,6 +176,7 @@ namespace kia_xan
             tmpBUKControl |= (1 << 4); // бит включения герцовой метки
             _xsan.BUNIControl.SetValue = tmpBUKControl;
             _xsan.Device.CmdHSIBUNIControl((byte)_xsan.BUNIControl.SetValue);
+             */
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -205,41 +201,6 @@ namespace kia_xan
             finally {
                 UKSData = null;
             }
-        }
-
-        private void KVVReadyCb_Click(object sender, RoutedEventArgs e)
-        {
-            GetXSANControl();
-        }
-
-        private void BUKErrorRegisterCb_Click(object sender, RoutedEventArgs e)
-        {
-            GetBUNIControl();
-        }
-
-        private void BUKDataChannelCbb_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            GetBUNIControl();
-        }
-
-        private void GetBUKControl(object sender, SelectionChangedEventArgs e)
-        {
-            GetBUNIControl();
-        }
-
-        private void XSANCmdChannelCbb_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            GetXSANControl();
-        }
-
-        private void KVVDatChannelCbb_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            GetXSANControl();
-        }
-
-        private void BUKCmdChannelCbb_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            GetBUNIControl();
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
@@ -295,6 +256,12 @@ namespace kia_xan
             _xsan.SetFileAndChannelForLogXSANData(_hsiFramesStream, selectedChannel);
         }
 
+        //****************************************************************************************
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void mouseLoggerEvent(object sender, MouseButtonEventArgs e)
         {
             string logEvent = EventClickToString.ElementClicked(e);

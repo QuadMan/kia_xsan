@@ -33,15 +33,16 @@ namespace kia_xan
         {
         }
 
-        public void CmdHSIBUNIControl(byte HSIImitControl)
+        public void CmdHSIBUNIControl(UInt32 HSIImitControl)
         {
-            buf = new byte[1] { HSIImitControl };
+            buf = new byte[1] { (byte)HSIImitControl };
             base.SendCmd(HSI_BUNI_CTRL_ADDR, buf);
         }
 
-        public void CmdHSIXSANControl(byte HSIControl,int frameSize)
+        public void CmdHSIXSANControl(UInt32 HSIControl)
         {
-            buf = new byte[3] { HSIControl, (byte)(frameSize >> 8), (byte)frameSize };
+            int frameSize = 496;
+            buf = new byte[3] { (byte)HSIControl, (byte)(frameSize >> 8), (byte)frameSize };
             base.SendCmd(HSI_XSAN_CTRL_ADDR, buf);
         }
 
@@ -116,7 +117,7 @@ namespace kia_xan
             eTime = new EgseTime();
             HSIInt = new HSIInterface();
             Tm = new XsanTm();
-
+            
             XSANControl = new ControlValue();
             BUNIControl = new ControlValue();
             PowerControl = new ControlValue();

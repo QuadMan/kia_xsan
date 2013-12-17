@@ -40,9 +40,6 @@ namespace kia_xan
         private void InitAll()
         {
             Xsan = new XSAN();
-            Xsan.XSANControl.AddProperty(hsiWin.XSANReadyCb, 4, 1);
-            Xsan.XSANControl.AddProperty(hsiWin.XSANBusyCb, 5, 1);
-            Xsan.XSANControl.AddProperty(hsiWin.XSANMECb, 6, 1);
         }
 
         private void CloseAll()
@@ -79,24 +76,24 @@ namespace kia_xan
             {
                 IXSANLabel.Content = "---";
             }
+            //
+            UpdateTM();
+        }
+
+        public void UpdateTM()
+        {
             // Индикация питания
             if (Xsan.Tm.IsPowerOn)
             {
                 PowerLabel.Content = "Питание ВКЛ";
                 PowerLabel.Background = Brushes.LightGreen;
-                if ((string)PwrOnOffBtn.Content == "ВКЛ ПИТАНИЕ")
-                {
-                    PwrOnOffBtn.Content = "ВЫКЛ ПИТАНИЕ";
-                }
+                PwrOnOffBtn.Content = "ВЫКЛ ПИТАНИЕ";
             }
             else
             {
                 PowerLabel.Content = "Питание ВЫКЛ";
                 PowerLabel.Background = Brushes.Red;
-                if ((string)PwrOnOffBtn.Content == "ВЫКЛ ПИТАНИЕ")
-                {
-                    PwrOnOffBtn.Content = "ВКЛ ПИТАНИЕ";
-                }
+                PwrOnOffBtn.Content = "ВКЛ ПИТАНИЕ";
             }
         }
 
@@ -161,6 +158,7 @@ namespace kia_xan
          * *******************************************************************************************************/
         private System.Windows.Threading.DispatcherTimer dispatcherTimer;
         private XsanAbout aboutWin;
+        private List<ControlValue> _controlValuesList = new List<ControlValue>();
 
         public MainWindow()
         {
@@ -169,6 +167,7 @@ namespace kia_xan
 
             InitAll();
             CreateAllWindows();
+            InitControlValues();
 
             LogsClass.Instance.Files[(int)LogsClass.Idx.logMain].LogText = "Программа " + SW_VERSION + " загрузилась";
             
@@ -178,12 +177,40 @@ namespace kia_xan
             dispatcherTimer.Start();
         }
 
+        private void InitControlValues()
+        {
+            Xsan.XSANControl.AddProperty(hsiWin.XSANReadyCb, 4, 1, Xsan.Device.CmdHSIXSANControl);
+            Xsan.XSANControl.AddProperty(hsiWin.XSANBusyCb, 5, 1, Xsan.Device.CmdHSIXSANControl);
+            Xsan.XSANControl.AddProperty(hsiWin.XSANMECb, 6, 1, Xsan.Device.CmdHSIXSANControl);
+            Xsan.XSANControl.AddProperty(hsiWin.XSANCmdChannelCbb, 0, 2, Xsan.Device.CmdHSIXSANControl);
+            Xsan.XSANControl.AddProperty(hsiWin.XSANDatChannelCbb, 2, 2, Xsan.Device.CmdHSIXSANControl);
+            //
+            Xsan.BUNIControl.AddProperty(hsiWin.BUNIOnCb, 0, 1, Xsan.Device.CmdHSIBUNIControl);
+            Xsan.BUNIControl.AddProperty(hsiWin.BUNICmdChannelCbb, 1, 1, Xsan.Device.CmdHSIBUNIControl);
+            Xsan.BUNIControl.AddProperty(hsiWin.BUNIDataChannelCbb, 2, 2, Xsan.Device.CmdHSIBUNIControl);
+            //
+            _controlValuesList.Add(Xsan.XSANControl);
+            _controlValuesList.Add(Xsan.BUNIControl);
+        }
+
+        private void TestControlValuesOnTimeTick()
+        {
+            foreach (ControlValue cv in _controlValuesList)
+            {
+                cv.TimerTick();
+            }
+        }
+
         private void CreateAllWindows()
         {
-            hsiWin = new HSIWindow(Xsan);
+            hsiWin = new HSIWindow(Xsan);            
 
             AppSettings.LoadWindow((Window)hsiWin);
             AppSettings.LoadWindow(Window.GetWindow(this));
+            if (hsiWin.Visibility == System.Windows.Visibility.Visible)
+            {
+                HSIControlCb.IsChecked = true;
+            }
             string powerLabelVisible = AppSettings.Load("PowerLabel");
             if (powerLabelVisible != null)
             {
@@ -212,6 +239,8 @@ namespace kia_xan
         private void timerWork(object sender, EventArgs e)
         {
             OnTimerWork();
+            //
+            TestControlValuesOnTimeTick();
             // индикация подключения
             TimeLabel.Content = Xsan.eTime.ToString();
             if (Xsan.Connected)
@@ -255,6 +284,14 @@ namespace kia_xan
             if (logEvent != null)
             {
                 LogsClass.Instance.Files[(int)LogsClass.Idx.logOperator].LogText = logEvent;
+            }
+        }
+
+        private void Window_Activated(object sender, EventArgs e)
+        {
+            if ((bool)HSIControlCb.IsChecked)
+            {
+                hsiWin.Visibility = System.Windows.Visibility.Visible;
             }
         }
 
