@@ -20,75 +20,46 @@ using System.Windows.Threading;
 
 namespace kia_xan
 {
-    //public class UksListClass : ObservableCollection
-    //{
-    //    public List<string> uksList { get; set; }
-
-    //    public void AddB(string b)
-    //    {
-    //        uksList.Add(b);
-    //        NotifyPropertyChanged("uksList");
-    //    }
-
-    //    public event PropertyChangedEventHandler PropertyChanged;
-    //    private void NotifyPropertyChanged(string info)
-    //    {
-    //        if (PropertyChanged != null)
-    //        {
-    //            PropertyChanged(this, new PropertyChangedEventArgs(info));
-    //        }
-    //    }
-    //}
-
     /// <summary>
     /// Interaction logic for HSIWindow.xaml
     /// </summary>
     public partial class HSIWindow : Window
     {
-        private System.Windows.Threading.DispatcherTimer dispatcherTimer;
-        XSAN _xsan;
-
+        /// <summary>
+        /// Список для вывода в таблицу данных от XSAN
+        /// </summary>
         public ObservableCollection<kia_xan.HSIInterface.XSANChannel> XSANCollection = new ObservableCollection<kia_xan.HSIInterface.XSANChannel>();
+        
+        /// <summary>
+        /// Список для вывода в таблицу данных от БУНИ
+        /// </summary>
         public ObservableCollection<kia_xan.HSIInterface.BUNIChannel> BUNICollection = new ObservableCollection<kia_xan.HSIInterface.BUNIChannel>();
-        //public ObservableCollection<string> uksList = new ObservableCollection<string>();
-
-        private bool _canClose = false;
-        FileStream _hsiFramesStream;
-
-        public void CanClose()
-        {
-            _canClose = true;
-        }
-
-        public void newUKSFrame(byte[] buf, byte[] timeBuf)
-        {
-            EgseTime time = new EgseTime();
-            time.data = timeBuf;
-
-            string uksString = time.ToString()+": "+Converter.ByteArrayToHexStr(buf);
-            UKSListBox.Dispatcher.Invoke(new Action(delegate { UKSListBox.Items.Add(uksString); UKSListBox.ScrollIntoView(uksString); }));            
-            //
-            LogsClass.Instance.Files[(int)LogsClass.Idx.logHSI].LogText = "УКС: " + uksString;
-        }
+        
+        // таймер 1 раз в секунду
+        private System.Windows.Threading.DispatcherTimer dispatcherTimer;
+        // ссылка на устройство
+        private XSAN _xsan;
+        // чтобы указать, что окно должно закрываться а не скрываться (может быть и не нужно)
+        //private bool _canClose = false;
+        // поток, в который записываем данные с XSAN
+        private FileStream _hsiFramesStream;
 
         public HSIWindow(XSAN xxsan)
         {
             InitializeComponent();
             //
             _hsiFramesStream = null;
-            //
+            // создаем коллекции для отображения статиcтики в таблицах по XSAN и БУНИ
             XSANCollection.Add(new HSIInterface.XSANChannel("Основной"));
             XSANCollection.Add(new HSIInterface.XSANChannel("Резервный"));
             BUNICollection.Add(new HSIInterface.BUNIChannel("Основной"));
             BUNICollection.Add(new HSIInterface.BUNIChannel("Резервный"));
-            //
-            //UKSListBox.Items.Add("Test string");
+            XSANGrid.DataContext = XSANCollection;
+            BUNIGrid.DataContext = BUNICollection;
+
             //
             _xsan = xxsan;
             _xsan.HSIInt.XSANStat.onUKSFrameReceived = newUKSFrame;
-            XSANGrid.DataContext = XSANCollection;
-            BUNIGrid.DataContext = BUNICollection;
-            //UKSListBox.DataContext = uksList;
 
             dispatcherTimer = new System.Windows.Threading.DispatcherTimer();
             dispatcherTimer.Tick += new EventHandler(timerWork);
@@ -96,47 +67,53 @@ namespace kia_xan
             dispatcherTimer.Start();
         }
 
-        private void UpdateBUKControl()
+        /// <summary>
+        /// Обработчк пришедшего УКС
+        /// </summary>
+        /// <param name="buf">Данные УКС</param>
+        /// <param name="timeBuf">Время получения</param>
+        public void newUKSFrame(byte[] buf, byte[] timeBuf)
         {
-            BUNIOnCb.IsChecked = (bool)((_xsan.BUNIControl.GetValue & 1) == 1);
-            BUNIDataChannelCbb.SelectedIndex = (_xsan.BUNIControl.GetValue >> 2) & 3;
-            BUNICmdChannelCbb.SelectedIndex = (_xsan.BUNIControl.GetValue >> 1) & 1;
-            //BUKErrorRegisterCb.IsChecked = (bool)(((_xsan.BUKControl.GetValue >>  4) & 1) == 1);
+            EgseTime time = new EgseTime();
+            time.data = timeBuf;
+
+            string uksString = time.ToString() + ": " + Converter.ByteArrayToHexStr(buf);
+            UKSListBox.Dispatcher.Invoke(new Action(delegate { UKSListBox.Items.Add(uksString); UKSListBox.ScrollIntoView(uksString); }));
+            //
+            LogsClass.Instance.Files[LogsClass.HsiIdx].LogText = "УКС: " + uksString;
         }
 
-        private void UpdateKVVControl()
-        {
-            XSANCmdChannelCbb.SelectedIndex = (_xsan.XSANControl.GetValue & 3);
-            XSANDatChannelCbb.SelectedIndex = ((_xsan.XSANControl.GetValue >> 2) & 3);
-            XSANReadyCb.IsChecked = ((_xsan.XSANControl.GetValue >> 4) & 1) == 1;
-            XSANBusyCb.IsChecked = ((_xsan.XSANControl.GetValue >> 5) & 1) == 1;
-            XSANMECb.IsChecked = ((_xsan.XSANControl.GetValue >> 6) & 1) == 1;
-        }
-
+        /// <summary>
+        /// Раз в секунду переписываем из статистики реального времени (_xsan.HSIInt.XSANStat и т.д.) данные в наши коллекции для отображения
+        /// в таблицах
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         public void timerWork(object sender, EventArgs e)
         {
-            if ((bool)NoScreenUpdateCb.IsChecked == false)
-            {
-                for (int i = 0; i < 2; i++)
-                {
-                    XSANCollection[i].SRCnt = _xsan.HSIInt.XSANStat.Channels[i].SRCnt;
-                    XSANCollection[i].ObtCnt = _xsan.HSIInt.XSANStat.Channels[i].OBTCnt;
-                    XSANCollection[i].DRCnt = _xsan.HSIInt.XSANStat.Channels[i].DRCnt;
-                    XSANCollection[i].TimeStampCnt = _xsan.HSIInt.XSANStat.Channels[i].TimeStampCnt;
-                    XSANCollection[i].UksCnt = _xsan.HSIInt.XSANStat.Channels[i].UKSCnt;
+            if ((bool) NoScreenUpdateCb.IsChecked) return;
 
-                    BUNICollection[i].ErrInCRCCnt = _xsan.HSIInt.BUNIStat.Channels[i].ErrInCRCCnt;
-                    BUNICollection[i].ErrInMarkerCnt = _xsan.HSIInt.BUNIStat.Channels[i].ErrInMarkerCnt;
-                    BUNICollection[i].ErrInParityCnt = _xsan.HSIInt.BUNIStat.Channels[i].ErrInParityCnt;
-                    BUNICollection[i].ErrInStopBitCnt = _xsan.HSIInt.BUNIStat.Channels[i].ErrInStopBitCnt;
-                    BUNICollection[i].FramesCnt = _xsan.HSIInt.BUNIStat.Channels[i].FramesCnt;
-                    BUNICollection[i].StatusBUSYCnt = _xsan.HSIInt.BUNIStat.Channels[i].StatusBUSYCnt;
-                    BUNICollection[i].StatusDataFramesCnt = _xsan.HSIInt.BUNIStat.Channels[i].StatusDataFramesCnt;
-                    BUNICollection[i].StatusMECnt = _xsan.HSIInt.BUNIStat.Channels[i].StatusMECnt;
-                    BUNICollection[i].StatusSRCnt = _xsan.HSIInt.BUNIStat.Channels[i].StatusSRCnt;
-                }
+            for (int i = 0; i < 2; i++)
+            {
+                XSANCollection[i].SRCnt = _xsan.HSIInt.XSANStat.Channels[i].SRCnt;
+                XSANCollection[i].ObtCnt = _xsan.HSIInt.XSANStat.Channels[i].OBTCnt;
+                XSANCollection[i].DRCnt = _xsan.HSIInt.XSANStat.Channels[i].DRCnt;
+                XSANCollection[i].TimeStampCnt = _xsan.HSIInt.XSANStat.Channels[i].TimeStampCnt;
+                XSANCollection[i].UksCnt = _xsan.HSIInt.XSANStat.Channels[i].UKSCnt;
+                XSANCollection[i].OBTStr = kia_xan.HSIInterface.BUNITime.ConvertToStr(_xsan.HSIInt.XSANStat.Channels[i].OBTVal);
+
+                BUNICollection[i].ErrInCRCCnt = _xsan.HSIInt.BUNIStat.Channels[i].ErrInCRCCnt;
+                BUNICollection[i].ErrInMarkerCnt = _xsan.HSIInt.BUNIStat.Channels[i].ErrInMarkerCnt;
+                BUNICollection[i].ErrInParityCnt = _xsan.HSIInt.BUNIStat.Channels[i].ErrInParityCnt;
+                BUNICollection[i].ErrInStopBitCnt = _xsan.HSIInt.BUNIStat.Channels[i].ErrInStopBitCnt;
+                BUNICollection[i].FramesCnt = _xsan.HSIInt.BUNIStat.Channels[i].FramesCnt;
+                BUNICollection[i].StatusBUSYCnt = _xsan.HSIInt.BUNIStat.Channels[i].StatusBUSYCnt;
+                BUNICollection[i].StatusDataFramesCnt = _xsan.HSIInt.BUNIStat.Channels[i].StatusDataFramesCnt;
+                BUNICollection[i].StatusMECnt = _xsan.HSIInt.BUNIStat.Channels[i].StatusMECnt;
+                BUNICollection[i].StatusSRCnt = _xsan.HSIInt.BUNIStat.Channels[i].StatusSRCnt;
             }
-            //
+
+            // покажем статистику по записанным данным, если запись производится
             if ((bool)WriteDataCheckBox.IsChecked)
             {
                 LogFileNameLabel.Content = System.IO.Path.GetFileName(_hsiFramesStream.Name);
@@ -144,41 +121,11 @@ namespace kia_xan
             }
         }
 
-        private void GetXSANControl()
-        {
-            /*
-            if (!this.IsInitialized) return;
-
-            int tmpXSANControl = 0;
-            tmpXSANControl = XSANCmdChannelCbb.SelectedIndex;
-            tmpXSANControl |= (XSANDatChannelCbb.SelectedIndex << 2);
-            if ((bool)XSANReadyCb.IsChecked) { tmpXSANControl |= (1 << 4); }
-            if ((bool)XSANBusyCb.IsChecked) { tmpXSANControl |= (1 << 5); }
-            if ((bool)XSANMECb.IsChecked) { tmpXSANControl |= (1 << 6); }
-
-            _xsan.XSANControl.SetValue = tmpXSANControl;
-            _xsan.Device.CmdHSIXSANControl((byte)_xsan.XSANControl.SetValue);
-             */
-        }
-
-        private void GetBUNIControl()
-        {
-            /*
-            if (!this.IsInitialized) return;
-
-            int tmpBUKControl = 0;
-
-            if ((bool)BUNIOnCb.IsChecked) { tmpBUKControl = 1; }
-            tmpBUKControl |= BUNICmdChannelCbb.SelectedIndex << 1;
-            tmpBUKControl |= BUNIDataChannelCbb.SelectedIndex << 2;
-            //if ((bool)BUKErrorRegisterCb.IsChecked) { tmpBUKControl |= (1 << 4); }
-
-            tmpBUKControl |= (1 << 4); // бит включения герцовой метки
-            _xsan.BUNIControl.SetValue = tmpBUKControl;
-            _xsan.Device.CmdHSIBUNIControl((byte)_xsan.BUNIControl.SetValue);
-             */
-        }
-
+        /// <summary>
+        /// Кнопка "Выдать УКС"
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             if (UksStrTextBox.Text == "") return;
@@ -203,29 +150,38 @@ namespace kia_xan
             }
         }
 
+        /// <summary>
+        /// Кнопка "Очистка статистики"
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
             _xsan.HSIInt.BUNIStat.Clear();
             _xsan.HSIInt.XSANStat.Clear();
         }
 
+        /// <summary>
+        /// При закрытии окна (скрываем)
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void Window_Closing(object sender, CancelEventArgs e)
         {
-            if (_canClose)
-            {
-                e.Cancel = false;
-            }
-            else {
-                e.Cancel = true;
-                Hide();
-            }
+            e.Cancel = true;
+            Hide();
         }
 
+        /// <summary>
+        /// Управление записью данных от XSAN
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void WriteDataCheckBox_Click(object sender, RoutedEventArgs e)
         {
             if ((bool)WriteDataCheckBox.IsChecked)
             {
-                _hsiFramesStream = new FileStream("test.dat", System.IO.FileMode.Create);
+                _hsiFramesStream = new FileStream("test.dat", System.IO.FileMode.Create);   // TODO: изменить имя файла на нормальное!
                 LogFileNameLabel.Visibility = Visibility.Visible;
                 LogFileSizeLabel.Visibility = Visibility.Visible;
             }
@@ -256,9 +212,8 @@ namespace kia_xan
             _xsan.SetFileAndChannelForLogXSANData(_hsiFramesStream, selectedChannel);
         }
 
-        //****************************************************************************************
         /// <summary>
-        /// 
+        /// Логгируем все нажания кнопок, чекбоксов и т.д.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -266,7 +221,7 @@ namespace kia_xan
         {
             string logEvent = EventClickToString.ElementClicked(e);
             if (logEvent != null) {
-                LogsClass.Instance.Files[(int)LogsClass.Idx.logOperator].LogText = logEvent; 
+                LogsClass.Instance.Files[LogsClass.OperatorIdx].LogText = logEvent; 
             }
         }
     }

@@ -20,6 +20,7 @@ namespace kia_xan
         private const int TIME_RESET_ADDR = 0x01;
         private const int TIME_DATA_ADDR = 0x02;
         private const int TIME_SET_ADDR = 0x03;
+        private const int TIME_OBT_ADDR = 0x12;
         //
         private const int POWER_SET_ADDR = 0x05;
         private const int HSI_BUNI_CTRL_ADDR = 0x06;
@@ -65,14 +66,54 @@ namespace kia_xan
             EgseTime time = new EgseTime();
             time.Encode();
 
+            byte[] OBTData = new byte[5];
+            OBTData[0] = 0;
+            OBTData[1] = 0;
+            OBTData[2] = 0;
+            OBTData[3] = 0;
+            OBTData[4] = 10;
+
             buf = new byte[1] { 1 };
 
             base.SendCmd(TIME_RESET_ADDR, buf);
             base.SendCmd(TIME_DATA_ADDR, time.data);
+            base.SendCmd(TIME_OBT_ADDR, OBTData);
             base.SendCmd(TIME_SET_ADDR, buf);
         }
     }
+    /*
+    public class EGSEBase
+    {
+        private string _serial;
+        private TProt _protocol;
+        private TDev _device;
+        private bool _connected;
+        private EgseTime _eTime;
 
+        public TDev Device
+        {
+            get
+            {
+                return _device;
+            }
+        }
+
+        public bool Connected
+        {
+            get { return _connected; }
+        }
+
+        public EgseTime ETime
+        {
+            get { return _eTime; }
+        }
+
+        public EGSEBase(TProt _prot, TDev _dev) 
+        {
+            //_protocol = new TProt();
+        }
+    }
+    */
     /// <summary>
     /// Общий объект, позволяющий управлять прибором (принимать данные, выдавать команды)
     /// </summary>
@@ -85,77 +126,99 @@ namespace kia_xan
         private const int HSI_BUNI_DATA_GET = 0x07;
         private const int TM_DATA_GET = 5;
 
-        const string XSANSerial = "KIA_LINA";
+        // *************************************************
         private ProtocolUSB5E4D _decoder;
+        //**************************************************
+
         private FileStream _xsanDataLogStream;
         private uint _xsanChannelForWriting;
 
         public XSANDevice Device;
-        public bool Connected;
-        public string time;
-        public EgseTime eTime;
+
+        public bool Connected { get; private set; }
+        public EgseTime ETime;
+
         public HSIInterface HSIInt;
         public XsanTm Tm;
-        public ControlValue XSANControl;
-        public ControlValue BUNIControl;
-        public ControlValue PowerControl;
 
+        /// <summary>
+        /// ссылка насписок управляющих элементов, передается из MainWindow
+        /// </summary>
+        public List<ControlValue> ControlValuesList = new List<ControlValue>();
+
+        /// <summary>
+        /// Конструктор по-умолчанию
+        /// </summary>
         public XSAN()
         {
-            _decoder = new ProtocolUSB5E4D(null, LogsClass.Instance.Files[(int)LogsClass.Idx.logUSB], false, true);
+            Connected = false;
+
+            _decoder = new ProtocolUSB5E4D(null, LogsClass.Instance.Files[LogsClass.UsbIdx], false, true);
             _decoder.GotProtocolMsg += new ProtocolUSBBase.ProtocolMsgEventHandler(onMessageFunc);
             _decoder.GotProtocolError += new ProtocolUSBBase.ProtocolErrorEventHandler(onErrorFunc);
 
+            ETime = new EgseTime();
+
+            Device = new XSANDevice(XsanConst.XSANSerial, _decoder);
+            Device.onNewState = onChangeConnection;
+            
+            //
             _xsanDataLogStream = null;
             _xsanChannelForWriting = 0;
-
-            Device = new XSANDevice(XSANSerial, _decoder);
-            Device.onNewState = onChangeConnection;
-            //
-
-            Connected = false;
-            eTime = new EgseTime();
+            
             HSIInt = new HSIInterface();
             Tm = new XsanTm();
-            
-            XSANControl = new ControlValue();
-            BUNIControl = new ControlValue();
-            PowerControl = new ControlValue();
-        }
-
-        public void Dispose()
-        {
+            ControlValuesList = null;
         }
 
         /// <summary>
-        /// Указываем какой файл использовать для записи данных и какой канал
+        /// Вызываетя при подключении прибора, чтобы все элементы управления обновили свои значения
         /// </summary>
-        /// <param name="fStream"></param>
-        /// <param name="channel"></param>
+        private void refreshAllControlsValues()
+        {
+            if (ControlValuesList == null) return;
+            
+            foreach (ControlValue cv in ControlValuesList)
+            {
+                cv.RefreshGetValue();
+            }
+        }
+
+        /// <summary>
+        /// Метод вызывается, когда прибор подсоединяется или отсоединяется
+        /// </summary>
+        /// <param name="state">Текущее состояние прибора TRUE - подключен, FALSE - отключен</param>
+        void onChangeConnection(bool connected)
+        {
+            Connected = connected;
+            if (Connected)
+            {
+                Device.CmdSendTime();
+                refreshAllControlsValues();
+                //
+                LogsClass.Instance.Files[LogsClass.MainIdx].LogText = "КИА XSAN подключен";
+            }
+            else
+            {
+                LogsClass.Instance.Files[LogsClass.MainIdx].LogText = "КИА XSAN отключен";
+            }
+        }
+
+        /// <summary>
+        /// Указываем какой файл использовать для записи данных от прибора XSAN и по какому каналу
+        /// </summary>
+        /// <param name="fStream">Поток для записи данных</param>
+        /// <param name="channel">По какому каналу</param>
         public void SetFileAndChannelForLogXSANData(FileStream fStream, uint channel)
         {
             _xsanDataLogStream = fStream;
             _xsanChannelForWriting = channel;
         }
 
-        void onChangeConnection(bool state)
-        {
-            Connected = state;
-            if (Connected)
-            {
-                Device.CmdSendTime();
-                XSANControl.RefreshGetValue();
-                BUNIControl.RefreshGetValue();
-                PowerControl.RefreshGetValue();
-                //
-                LogsClass.Instance.Files[(int)LogsClass.Idx.logMain].LogText = "КИА XSAN подключен";
-            }
-            else
-            {
-                LogsClass.Instance.Files[(int)LogsClass.Idx.logMain].LogText = "КИА XSAN отключен";
-            }
-        }
-
+        /// <summary>
+        /// Метод обрабатывающий сообщения от декодера USB
+        /// </summary>
+        /// <param name="msg">Сообщение</param>
         void onMessageFunc(MsgBase msg)
         {
             ProtocolMsgEventArgs msg1 = msg as ProtocolMsgEventArgs;
@@ -164,11 +227,11 @@ namespace kia_xan
                 switch (msg1.Addr)
                 {
                     case TIME_ADDR_GET:
-                        Array.Copy(msg1.Data, 0, eTime.data, 0, 6);
+                        Array.Copy(msg1.Data, 0, ETime.data, 0, 6);
                         break;
                     case TM_DATA_GET :
                         Tm.Update(msg1.Data);
-                        PowerControl.GetValue = msg1.Data[6];
+                        ControlValuesList[XsanConst.CTRL_POWER_IDX].GetValue = msg1.Data[6];
                         break;
                     case HSI_XSAN_DATA_GET:
                         HSIInt.XSANStat.Update(msg1.Data, msg1.DataLen);
@@ -177,10 +240,10 @@ namespace kia_xan
                         HSIInt.BUNIStat.Update(msg1.Data, _xsanDataLogStream, _xsanChannelForWriting);
                         break;
                     case HSI_BUNI_CTRL_GET:
-                        BUNIControl.GetValue = msg1.Data[0];
+                        ControlValuesList[XsanConst.BUNI_CTRL_IDX].GetValue = msg1.Data[0];
                         break;
                     case HSI_XSAN_CTRL_GET:
-                        XSANControl.GetValue = msg1.Data[0];
+                        ControlValuesList[XsanConst.XSAN_CTRL_IDX].GetValue = msg1.Data[0];
                         break;
                 }
             }
@@ -195,7 +258,7 @@ namespace kia_xan
             ProtocolErrorEventArgs msg = errMsg as ProtocolErrorEventArgs;
             string bufferStr = Converter.ByteArrayToHexStr(msg.Data);
 
-            LogsClass.Instance.Files[(int)LogsClass.Idx.logErrors].LogText = msg.Msg+" ("+bufferStr+", на позиции: "+msg.ErrorPos.ToString()+")";
+            LogsClass.Instance.Files[LogsClass.ErrorsIdx].LogText = msg.Msg+" ("+bufferStr+", на позиции: "+msg.ErrorPos.ToString()+")";
         }
     }
 }

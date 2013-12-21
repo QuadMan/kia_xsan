@@ -1,10 +1,9 @@
 ﻿using EGSE.Utilites;
 using EGSE.Utilites.ADC;
 /*
- * Доработки: + в класс протокола ввести конструктур с нашим логгером
+ * Доработки: 
  *            - доработать класс логгера, чтобы он нормально сбрасывал данные
  *            - вывести строки в ресурсы
- *            - запоминать положение окон
  */
 using System;
 using System.Collections;
@@ -30,60 +29,91 @@ namespace kia_xan
     /// </summary>
     public partial class MainWindow : Window
     {
-        public const string SW_CAPTION = "КИА XSAN";
-        private const string SW_VERSION = "0.0.1.0";
-        private const string DEV_NAME = "БИ КИА XSAN";
+        private const string SW_CAPTION = XsanConst.SW_CAPTION;
+        private const string SW_VERSION = XsanConst.SW_VERSION;
+        private const string DEV_NAME = XsanConst.DEV_NAME;
 
-        private XSAN Xsan;
-        public HSIWindow hsiWin;
+        private HSIWindow hsiWin;
+        private const int WIN_HSI_IDX = 1;
 
-        private void InitAll()
+        private XSAN EGSE;
+
+        const int XSAN_READY_IDX = 0;
+        const int XSAN_BUSY_IDX = 1;
+        const int XSAN_ME_IDX = 2;
+        const int XSAN_CMD_CH_IDX = 3;
+        const int XSAN_DAT_CH_IDX = 4;
+        const int BUNI_ON_IDX = 5;
+        const int BUNI_CMD_CH_IDX = 6;
+        const int BUNI_DATA_CH_IDX = 7;
+        const int BUNI_HZ_IDX = 8;
+        const int BUNI_KBV_IDX = 9;
+
+        private void initControlValues()
         {
-            Xsan = new XSAN();
+            _controlValuesList.Add(new ControlValue()); // XSAN_CTRL_IDX
+            _controlValuesList.Add(new ControlValue()); // BUNI_CTRL_IDX
+            _controlValuesList.Add(new ControlValue()); // POWER_CTRL_IDX
+
+            _controlValuesList[XsanConst.XSAN_CTRL_IDX].AddProperty(XSAN_READY_IDX, hsiWin.XSANReadyCb, 4, 1, EGSE.Device.CmdHSIXSANControl);
+            _controlValuesList[XsanConst.XSAN_CTRL_IDX].AddProperty(XSAN_BUSY_IDX, hsiWin.XSANBusyCb, 5, 1, EGSE.Device.CmdHSIXSANControl);
+            _controlValuesList[XsanConst.XSAN_CTRL_IDX].AddProperty(XSAN_ME_IDX, hsiWin.XSANMECb, 6, 1, EGSE.Device.CmdHSIXSANControl);
+            _controlValuesList[XsanConst.XSAN_CTRL_IDX].AddProperty(XSAN_CMD_CH_IDX, hsiWin.XSANCmdChannelCbb, 0, 2, EGSE.Device.CmdHSIXSANControl);
+            _controlValuesList[XsanConst.XSAN_CTRL_IDX].AddProperty(XSAN_DAT_CH_IDX, hsiWin.XSANDatChannelCbb, 2, 2, EGSE.Device.CmdHSIXSANControl);
+            //
+            _controlValuesList[XsanConst.BUNI_CTRL_IDX].AddProperty(BUNI_ON_IDX, hsiWin.BUNIOnCb, 0, 1, EGSE.Device.CmdHSIBUNIControl);
+            _controlValuesList[XsanConst.BUNI_CTRL_IDX].AddProperty(BUNI_CMD_CH_IDX, hsiWin.BUNICmdChannelCbb, 1, 1, EGSE.Device.CmdHSIBUNIControl);
+            _controlValuesList[XsanConst.BUNI_CTRL_IDX].AddProperty(BUNI_DATA_CH_IDX, hsiWin.BUNIDataChannelCbb, 2, 2, EGSE.Device.CmdHSIBUNIControl);
+            _controlValuesList[XsanConst.BUNI_CTRL_IDX].AddProperty(BUNI_HZ_IDX, hsiWin.BUNIHzOn, 4, 1, EGSE.Device.CmdHSIBUNIControl);
+            _controlValuesList[XsanConst.BUNI_CTRL_IDX].AddProperty(BUNI_KBV_IDX, hsiWin.BUNIKbvOn, 5, 1, EGSE.Device.CmdHSIBUNIControl);
         }
 
-        private void CloseAll()
+        private void initDevice()
         {
-            hsiWin.CanClose();
-            hsiWin.Close();
-            Xsan.Device.finishAll();
+            EGSE = new XSAN();
+        }
+
+        private void initWindows()
+        {
+            _windowsList.Add(new HSIWindow(EGSE));
+            hsiWin = (HSIWindow)_windowsList[WIN_HSI_IDX];
         }
 
         private void OnTimerWork()
         {
             // выведем значения АЦП
-            try
+            if (EGSE.Tm.IsPowerOn)
             {
-                U27VLabel.Content = Xsan.Tm.Adc.GetValue(XsanTm.ADC_CH_27V);
+                try
+                {
+                    U27VLabel.Content = Math.Round(EGSE.Tm.Adc.GetValue(XsanTm.ADC_CH_U)).ToString();
+                }
+                catch (ADCException)
+                {
+                    U27VLabel.Content = "---";
+                }
+                try
+                {
+                    IXSANLabel.Content = Math.Round(EGSE.Tm.Adc.GetValue(XsanTm.ADC_CH_I)).ToString();
+                }
+                catch (ADCException)
+                {
+                    IXSANLabel.Content = "---";
+                }
             }
-            catch (ADCException adcE)
+            else
             {
                 U27VLabel.Content = "---";
-            }
-            try
-            {
-                UXSANLabel.Content = Xsan.Tm.Adc.GetValue(XsanTm.ADC_CH_U);
-            }
-            catch (ADCException adcE)
-            {
-                UXSANLabel.Content = "---";
-            }
-            try
-            {
-                IXSANLabel.Content = Xsan.Tm.Adc.GetValue(XsanTm.ADC_CH_I);
-            }
-            catch (ADCException adcE)
-            {
                 IXSANLabel.Content = "---";
             }
-            //
-            UpdateTM();
+            
+            updateTM();
         }
 
-        public void UpdateTM()
+        private void updateTM()
         {
             // Индикация питания
-            if (Xsan.Tm.IsPowerOn)
+            if (EGSE.Tm.IsPowerOn)
             {
                 PowerLabel.Content = "Питание ВКЛ";
                 PowerLabel.Background = Brushes.LightGreen;
@@ -98,7 +128,65 @@ namespace kia_xan
         }
 
         /// <summary>
+        /// Метод инициализируеющий дополнительные модули (если это необходимо)
+        /// </summary>
+        private void initModules()
+        {
+        }
+
+        /// <summary>
+        /// Метод проверяет, если чекбокс управляющий окном управления выбран, чтобы было активно окно, ему соответсвующее
+        /// </summary>
+        private void checkWindowsActivation()
+        {
+            if ((bool)HSIControlCb.IsChecked)
+            {
+                _windowsList[WIN_HSI_IDX].Visibility = System.Windows.Visibility.Visible;
+            }
+        }
+
+        /// <summary>
+        /// Загружаем специфичные настройки приложения при загрузке
+        /// </summary>
+        private void loadAppSettings()
+        {
+            // если окно открыто, соответствующий чекбокс должен быть выбран
+            if (_windowsList[WIN_HSI_IDX].Visibility == System.Windows.Visibility.Visible)
+            {
+                HSIControlCb.IsChecked = true;
+            }
+            // управляем отображением телеметрической информацией
+            string powerLabelVisible = AppSettings.Load("PowerLabel");
+            if (powerLabelVisible != null)
+            {
+                switch (powerLabelVisible)
+                {
+                    case "Visible":
+                        TMGrid.Visibility = System.Windows.Visibility.Visible;
+                        break;
+                    case "Hidden":
+                        TMGrid.Visibility = System.Windows.Visibility.Hidden;
+                        break;
+                    default:
+                        TMGrid.Visibility = System.Windows.Visibility.Visible;
+                        break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Сохраняем специфические настройки приложения
+        /// В данном случае - видимость панели телеметрии
+        /// </summary>
+        private void saveAppSettings()
+        {
+            AppSettings.Save("PowerLabel", Convert.ToString(TMGrid.Visibility));
+        }
+
+        /// <summary>
         /// Панель управления, окно "Управление ВСИ"
+        /// При установке флажка, показываем окно, при снятии влажка - просто скрываем
+        /// TODO: надо бы сделать автоматическую привязку
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -106,12 +194,12 @@ namespace kia_xan
         {
             if ((bool)HSIControlCb.IsChecked)
             {
-                hsiWin.Owner = Window.GetWindow(this);
-                hsiWin.Show();
+                _windowsList[WIN_HSI_IDX].Owner = _windowsList[0];
+                _windowsList[WIN_HSI_IDX].Show();
             }
             else
             {
-                hsiWin.Hide();
+                _windowsList[WIN_HSI_IDX].Hide();
             }
         }
 
@@ -122,15 +210,15 @@ namespace kia_xan
         /// <param name="e"></param>
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            if (Xsan.Tm.IsPowerOn)
+            if (EGSE.Tm.IsPowerOn)
             {
-                Xsan.PowerControl.SetValue = 0;
+                _controlValuesList[XsanConst.CTRL_POWER_IDX].SetValue = 0;
             }
             else
             {
-                Xsan.PowerControl.SetValue = 1;
+                _controlValuesList[XsanConst.CTRL_POWER_IDX].SetValue = 1;
             }
-            Xsan.Device.CmdPowerOnOff((byte)Xsan.PowerControl.SetValue);
+            EGSE.Device.CmdPowerOnOff((byte)_controlValuesList[XsanConst.CTRL_POWER_IDX].SetValue);
         }
 
         /// <summary>
@@ -150,150 +238,5 @@ namespace kia_xan
                 }
             }
         }
-
-        /*********************************************************************************************************
-         * 
-         * СТАНДАРТНЫЕ ОБРАБОТЧИКИ
-         * 
-         * *******************************************************************************************************/
-        private System.Windows.Threading.DispatcherTimer dispatcherTimer;
-        private XsanAbout aboutWin;
-        private List<ControlValue> _controlValuesList = new List<ControlValue>();
-
-        public MainWindow()
-        {
-            InitializeComponent();
-            this.Title = SW_CAPTION;// +"  " + SW_VERSION;
-
-            InitAll();
-            CreateAllWindows();
-            InitControlValues();
-
-            LogsClass.Instance.Files[(int)LogsClass.Idx.logMain].LogText = "Программа " + SW_VERSION + " загрузилась";
-            
-            dispatcherTimer = new System.Windows.Threading.DispatcherTimer();
-            dispatcherTimer.Tick += new EventHandler(timerWork);
-            dispatcherTimer.Interval = new TimeSpan(0, 0, 1);
-            dispatcherTimer.Start();
-        }
-
-        private void InitControlValues()
-        {
-            Xsan.XSANControl.AddProperty(hsiWin.XSANReadyCb, 4, 1, Xsan.Device.CmdHSIXSANControl);
-            Xsan.XSANControl.AddProperty(hsiWin.XSANBusyCb, 5, 1, Xsan.Device.CmdHSIXSANControl);
-            Xsan.XSANControl.AddProperty(hsiWin.XSANMECb, 6, 1, Xsan.Device.CmdHSIXSANControl);
-            Xsan.XSANControl.AddProperty(hsiWin.XSANCmdChannelCbb, 0, 2, Xsan.Device.CmdHSIXSANControl);
-            Xsan.XSANControl.AddProperty(hsiWin.XSANDatChannelCbb, 2, 2, Xsan.Device.CmdHSIXSANControl);
-            //
-            Xsan.BUNIControl.AddProperty(hsiWin.BUNIOnCb, 0, 1, Xsan.Device.CmdHSIBUNIControl);
-            Xsan.BUNIControl.AddProperty(hsiWin.BUNICmdChannelCbb, 1, 1, Xsan.Device.CmdHSIBUNIControl);
-            Xsan.BUNIControl.AddProperty(hsiWin.BUNIDataChannelCbb, 2, 2, Xsan.Device.CmdHSIBUNIControl);
-            //
-            _controlValuesList.Add(Xsan.XSANControl);
-            _controlValuesList.Add(Xsan.BUNIControl);
-        }
-
-        private void TestControlValuesOnTimeTick()
-        {
-            foreach (ControlValue cv in _controlValuesList)
-            {
-                cv.TimerTick();
-            }
-        }
-
-        private void CreateAllWindows()
-        {
-            hsiWin = new HSIWindow(Xsan);            
-
-            AppSettings.LoadWindow((Window)hsiWin);
-            AppSettings.LoadWindow(Window.GetWindow(this));
-            if (hsiWin.Visibility == System.Windows.Visibility.Visible)
-            {
-                HSIControlCb.IsChecked = true;
-            }
-            string powerLabelVisible = AppSettings.Load("PowerLabel");
-            if (powerLabelVisible != null)
-            {
-                switch (powerLabelVisible)
-                {
-                    case "Visible" :
-                        TMGrid.Visibility = System.Windows.Visibility.Visible;
-                        break;
-                    case "Hidden" :
-                        TMGrid.Visibility = System.Windows.Visibility.Hidden;
-                        break;
-                    default :
-                        TMGrid.Visibility = System.Windows.Visibility.Visible;
-                        break;
-                }
-            }
-        }
-
-        private void SaveAllWindows()
-        {
-            AppSettings.SaveWindow((Window)hsiWin);
-            AppSettings.SaveWindow(Window.GetWindow(this));
-            AppSettings.Save("PowerLabel", Convert.ToString(TMGrid.Visibility));
-        }
-
-        private void timerWork(object sender, EventArgs e)
-        {
-            OnTimerWork();
-            //
-            TestControlValuesOnTimeTick();
-            // индикация подключения
-            TimeLabel.Content = Xsan.eTime.ToString();
-            if (Xsan.Connected)
-            {
-                ConnectionLabel.Background = Brushes.LightGreen;
-                ConnectionLabel.Content = DEV_NAME + " подключен";
-            }
-            else
-            {
-                ConnectionLabel.Background = Brushes.Red;
-                ConnectionLabel.Content = DEV_NAME + " отключен";
-            }
-            SpeedLabel.Content = Converter.SpeedToStr(Xsan.Device.speed) + " [" + Xsan.Device.globalBufSize.ToString() + "]";
-        }
-
-        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
-        {
-            SaveAllWindows();
-            //
-            CloseAll();
-            //
-            LogsClass.Instance.Files[(int)LogsClass.Idx.logMain].LogText = "Программа завершена";
-            LogsClass.Instance.Files.FlushAll();
-        }
-
-        private void CloseButton_Click(object sender, RoutedEventArgs e)
-        {
-            Application.Current.Shutdown();
-        }
-
-        private void AboutButton_Click(object sender, RoutedEventArgs e)
-        {
-            aboutWin = new XsanAbout();
-            aboutWin.Owner = Window.GetWindow(this);
-            aboutWin.ShowDialog();
-        }
-
-        private void mouseLoggerEvent(object sender, MouseButtonEventArgs e)
-        {
-            string logEvent = EventClickToString.ElementClicked(e);
-            if (logEvent != null)
-            {
-                LogsClass.Instance.Files[(int)LogsClass.Idx.logOperator].LogText = logEvent;
-            }
-        }
-
-        private void Window_Activated(object sender, EventArgs e)
-        {
-            if ((bool)HSIControlCb.IsChecked)
-            {
-                hsiWin.Visibility = System.Windows.Visibility.Visible;
-            }
-        }
-
     }
 }

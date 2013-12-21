@@ -130,6 +130,8 @@ namespace kia_xan
             public uint OBTCnt;
             // Всего УКС получено
             public uint UKSCnt;
+            // значение КБВ
+            public byte[] OBTVal;
 
             /// <summary>
             /// Сброс статистики
@@ -141,6 +143,8 @@ namespace kia_xan
                 TimeStampCnt = 0;
                 OBTCnt = 0;
                 UKSCnt = 0;
+                OBTVal = null;
+                OBTVal = new byte[5];
             }
         }
 
@@ -208,6 +212,7 @@ namespace kia_xan
             public BUNIStatistics()
             {
                 Channels = new BUNIChannelStruct[2];
+                Clear();
                 Channels[0].Name = "Основной";
                 Channels[1].Name = "Резервный";
             }
@@ -244,7 +249,11 @@ namespace kia_xan
             // текущий канал
             private int _curChannelId;
 
-           
+           /// <summary>
+           /// Последнее КБВ, полученное от прибора
+           /// </summary>
+            //public byte[] lastOBT;
+
             /// <summary>
             /// Определение делегата обработки УКС
             /// </summary>
@@ -291,6 +300,7 @@ namespace kia_xan
                         break;
                     case HSI_OBT_FLAG:
                         Channels[_curChannelId].OBTCnt++;
+                        Array.Copy(buf, 9, Channels[_curChannelId].OBTVal, 0, 5);
                         break;
                     case HSI_UKS_FLAG:
                         Channels[_curChannelId].UKSCnt++;
@@ -312,8 +322,11 @@ namespace kia_xan
             public XSANStatistics()
             {
                 Channels = new XSANChannelStruct[2];
+                Clear();
                 Channels[0].Name = "Основной";
                 Channels[1].Name = "Резервный";
+                //
+                //lastOBT = new byte[5];
             }
 
             /// <summary>
@@ -370,20 +383,20 @@ namespace kia_xan
                 Name = chName;              // чтобы обновить ObservationCollection
             }
 
-            public void UpdateTimeEventData()
-            {
-                //            TimeEventData = GetData;
-                Name = GetData.Name;
-                FramesCnt = GetData.FramesCnt;
-                StatusMECnt = GetData.StatusMECnt;
-                StatusSRCnt = GetData.StatusSRCnt;
-                StatusBUSYCnt = GetData.StatusBUSYCnt;
-                StatusDataFramesCnt = GetData.StatusDataFramesCnt;
-                ErrInMarkerCnt = GetData.ErrInMarkerCnt;
-                ErrInCRCCnt = GetData.ErrInCRCCnt;
-                ErrInStopBitCnt = GetData.ErrInStopBitCnt;
-                ErrInParityCnt = GetData.ErrInParityCnt;
-            }
+            //public void UpdateTimeEventData()
+            //{
+            //    //            TimeEventData = GetData;
+            //    Name = GetData.Name;
+            //    FramesCnt = GetData.FramesCnt;
+            //    StatusMECnt = GetData.StatusMECnt;
+            //    StatusSRCnt = GetData.StatusSRCnt;
+            //    StatusBUSYCnt = GetData.StatusBUSYCnt;
+            //    StatusDataFramesCnt = GetData.StatusDataFramesCnt;
+            //    ErrInMarkerCnt = GetData.ErrInMarkerCnt;
+            //    ErrInCRCCnt = GetData.ErrInCRCCnt;
+            //    ErrInStopBitCnt = GetData.ErrInStopBitCnt;
+            //    ErrInParityCnt = GetData.ErrInParityCnt;
+            //}
 
             public event PropertyChangedEventHandler PropertyChanged;
             private void FirePropertyChangedEvent(string propertyName)
@@ -419,12 +432,14 @@ namespace kia_xan
             private uint _timeStampCnt;
             private uint _obtCnt;
             private uint _uksCnt;
+            private string _obtVal;
             public string Name { get { return _name; } set { _name = value; FirePropertyChangedEvent("Name"); } }
             public uint SRCnt { get { return _srCnt; } set { _srCnt = value; FirePropertyChangedEvent("SRCnt"); } }
             public uint DRCnt { get { return _drCnt; } set { _drCnt = value; FirePropertyChangedEvent("DRCnt"); } }
             public uint TimeStampCnt { get { return _timeStampCnt; } set { _timeStampCnt = value; FirePropertyChangedEvent("TimeStampCnt"); } }
             public uint ObtCnt { get { return _obtCnt; } set { _obtCnt = value; FirePropertyChangedEvent("ObtCnt"); } }
             public uint UksCnt { get { return _uksCnt; } set { _uksCnt = value; FirePropertyChangedEvent("UksCnt"); } }
+            public string OBTStr { get { return _obtVal; } set { _obtVal = value; FirePropertyChangedEvent("OBTStr"); } }
 
             public XSANChannel(string chName)
             {
@@ -432,15 +447,16 @@ namespace kia_xan
                 Name = chName;
             }
 
-            public void UpdateTimeEventData()
-            {
-                Name = GetData.Name;
-                SRCnt = GetData.SRCnt;
-                DRCnt = GetData.DRCnt;
-                TimeStampCnt = GetData.TimeStampCnt;
-                ObtCnt = GetData.OBTCnt;
-                UksCnt = GetData.UKSCnt;
-            }
+            //public void UpdateTimeEventData()
+            //{
+            //    Name = GetData.Name;
+            //    SRCnt = GetData.SRCnt;
+            //    DRCnt = GetData.DRCnt;
+            //    TimeStampCnt = GetData.TimeStampCnt;
+            //    ObtCnt = GetData.OBTCnt;
+            //    UksCnt = GetData.UKSCnt;
+            //    OBTVal = GetData.OBTVal; 
+            //}
 
             public event PropertyChangedEventHandler PropertyChanged;
             private void FirePropertyChangedEvent(string propertyName)
@@ -457,6 +473,18 @@ namespace kia_xan
                 TimeStampCnt = 0;
                 ObtCnt = 0;
                 UksCnt = 0;
+            }
+        }
+
+        /// <summary>
+        /// Преобразуем время в формате БУНИ в строку (ДНИ:ЧАСЫ:МИНУТЫ:СЕКУНДЫ)
+        /// </summary>
+        static public class BUNITime
+        {
+            static public string ConvertToStr(byte[] buf) {
+                UInt64 secCount = buf[4] | ((UInt64)buf[3] << 8) | ((UInt64)buf[2] << 16) | ((UInt64)buf[1] << 24) | ((UInt64)buf[0] << 32);
+                TimeSpan time = TimeSpan.FromSeconds(secCount);
+                return string.Format("{0}:{1}:{2}:{3}", time.Days, time.Hours, time.Minutes, time.Seconds);
             }
         }
     }
