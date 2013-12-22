@@ -33,21 +33,11 @@ namespace kia_xan
         private const string SW_VERSION = XsanConst.SW_VERSION;
         private const string DEV_NAME = XsanConst.DEV_NAME;
 
+        private XsanCyclogramCommands _xsanCycCommands = new XsanCyclogramCommands();
         private HSIWindow hsiWin;
         private const int WIN_HSI_IDX = 1;
 
         private XSAN EGSE;
-
-        const int XSAN_READY_IDX = 0;
-        const int XSAN_BUSY_IDX = 1;
-        const int XSAN_ME_IDX = 2;
-        const int XSAN_CMD_CH_IDX = 3;
-        const int XSAN_DAT_CH_IDX = 4;
-        const int BUNI_ON_IDX = 5;
-        const int BUNI_CMD_CH_IDX = 6;
-        const int BUNI_DATA_CH_IDX = 7;
-        const int BUNI_HZ_IDX = 8;
-        const int BUNI_KBV_IDX = 9;
 
         private void initControlValues()
         {
@@ -55,27 +45,31 @@ namespace kia_xan
             _controlValuesList.Add(new ControlValue()); // BUNI_CTRL_IDX
             _controlValuesList.Add(new ControlValue()); // POWER_CTRL_IDX
 
-            _controlValuesList[XsanConst.XSAN_CTRL_IDX].AddProperty(XSAN_READY_IDX, hsiWin.XSANReadyCb, 4, 1, EGSE.Device.CmdHSIXSANControl);
-            _controlValuesList[XsanConst.XSAN_CTRL_IDX].AddProperty(XSAN_BUSY_IDX, hsiWin.XSANBusyCb, 5, 1, EGSE.Device.CmdHSIXSANControl);
-            _controlValuesList[XsanConst.XSAN_CTRL_IDX].AddProperty(XSAN_ME_IDX, hsiWin.XSANMECb, 6, 1, EGSE.Device.CmdHSIXSANControl);
-            _controlValuesList[XsanConst.XSAN_CTRL_IDX].AddProperty(XSAN_CMD_CH_IDX, hsiWin.XSANCmdChannelCbb, 0, 2, EGSE.Device.CmdHSIXSANControl);
-            _controlValuesList[XsanConst.XSAN_CTRL_IDX].AddProperty(XSAN_DAT_CH_IDX, hsiWin.XSANDatChannelCbb, 2, 2, EGSE.Device.CmdHSIXSANControl);
+            _controlValuesList[XsanConst.XSAN_CTRL_IDX].AddProperty(XsanConst.CTRL_XSAN_READY_IDX, hsiWin.XSANReadyCb, 4, 1, EGSE.Device.CmdHSIXSANControl);
+            _controlValuesList[XsanConst.XSAN_CTRL_IDX].AddProperty(XsanConst.CTRL_XSAN_BUSY_IDX, hsiWin.XSANBusyCb, 5, 1, EGSE.Device.CmdHSIXSANControl);
+            _controlValuesList[XsanConst.XSAN_CTRL_IDX].AddProperty(XsanConst.CTRL_XSAN_ME_IDX, hsiWin.XSANMECb, 6, 1, EGSE.Device.CmdHSIXSANControl);
+            _controlValuesList[XsanConst.XSAN_CTRL_IDX].AddProperty(XsanConst.CTRL_XSAN_CMD_CH_IDX, hsiWin.XSANCmdChannelCbb, 0, 2, EGSE.Device.CmdHSIXSANControl);
+            _controlValuesList[XsanConst.XSAN_CTRL_IDX].AddProperty(XsanConst.CTRL_XSAN_DAT_CH_IDX, hsiWin.XSANDatChannelCbb, 2, 2, EGSE.Device.CmdHSIXSANControl);
             //
-            _controlValuesList[XsanConst.BUNI_CTRL_IDX].AddProperty(BUNI_ON_IDX, hsiWin.BUNIOnCb, 0, 1, EGSE.Device.CmdHSIBUNIControl);
-            _controlValuesList[XsanConst.BUNI_CTRL_IDX].AddProperty(BUNI_CMD_CH_IDX, hsiWin.BUNICmdChannelCbb, 1, 1, EGSE.Device.CmdHSIBUNIControl);
-            _controlValuesList[XsanConst.BUNI_CTRL_IDX].AddProperty(BUNI_DATA_CH_IDX, hsiWin.BUNIDataChannelCbb, 2, 2, EGSE.Device.CmdHSIBUNIControl);
-            _controlValuesList[XsanConst.BUNI_CTRL_IDX].AddProperty(BUNI_HZ_IDX, hsiWin.BUNIHzOn, 4, 1, EGSE.Device.CmdHSIBUNIControl);
-            _controlValuesList[XsanConst.BUNI_CTRL_IDX].AddProperty(BUNI_KBV_IDX, hsiWin.BUNIKbvOn, 5, 1, EGSE.Device.CmdHSIBUNIControl);
+            _controlValuesList[XsanConst.BUNI_CTRL_IDX].AddProperty(XsanConst.CTRL_BUNI_ON_IDX, hsiWin.BUNIOnCb, 0, 1, EGSE.Device.CmdHSIBUNIControl);
+            _controlValuesList[XsanConst.BUNI_CTRL_IDX].AddProperty(XsanConst.CTRL_BUNI_CMD_CH_IDX, hsiWin.BUNICmdChannelCbb, 1, 1, EGSE.Device.CmdHSIBUNIControl);
+            _controlValuesList[XsanConst.BUNI_CTRL_IDX].AddProperty(XsanConst.CTRL_BUNI_DAT_CH_IDX, hsiWin.BUNIDataChannelCbb, 2, 2, EGSE.Device.CmdHSIBUNIControl);
+            _controlValuesList[XsanConst.BUNI_CTRL_IDX].AddProperty(XsanConst.CTRL_BUNI_HZ_IDX, hsiWin.BUNIHzOn, 4, 1, EGSE.Device.CmdHSIBUNIControl);
+            _controlValuesList[XsanConst.BUNI_CTRL_IDX].AddProperty(XsanConst.CTRL_BUNI_KBV_IDX, hsiWin.BUNIKbvOn, 5, 1, EGSE.Device.CmdHSIBUNIControl);
+            //
+            _controlValuesList[XsanConst.POWER_CTRL_IDX].AddProperty(XsanConst.CTRL_POWER_IDX, null, 0, 1, EGSE.Device.CmdPowerOnOff);
+
+            _xsanCycCommands.ContolValuesList = _controlValuesList;
         }
 
         private void initDevice()
         {
-            EGSE = new XSAN();
+            EGSE = new XSAN(_controlValuesList);
         }
 
         private void initWindows()
         {
-            _windowsList.Add(new HSIWindow(EGSE));
+            _windowsList.Add(new HSIWindow());
             hsiWin = (HSIWindow)_windowsList[WIN_HSI_IDX];
         }
 
@@ -132,6 +126,8 @@ namespace kia_xan
         /// </summary>
         private void initModules()
         {
+            CycloGrid.cycCommandsAvailable = _xsanCycCommands.CycCommandsAvailable;
+            hsiWin.Init(EGSE);
         }
 
         /// <summary>
@@ -210,15 +206,7 @@ namespace kia_xan
         /// <param name="e"></param>
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            if (EGSE.Tm.IsPowerOn)
-            {
-                _controlValuesList[XsanConst.CTRL_POWER_IDX].SetValue = 0;
-            }
-            else
-            {
-                _controlValuesList[XsanConst.CTRL_POWER_IDX].SetValue = 1;
-            }
-            EGSE.Device.CmdPowerOnOff((byte)_controlValuesList[XsanConst.CTRL_POWER_IDX].SetValue);
+            _controlValuesList[XsanConst.POWER_CTRL_IDX].SetProperty(XsanConst.CTRL_POWER_IDX, Convert.ToInt32(!EGSE.Tm.IsPowerOn));
         }
 
         /// <summary>

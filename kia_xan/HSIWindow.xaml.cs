@@ -1,4 +1,5 @@
-﻿using EGSE.Utilites;
+﻿using System.Diagnostics;
+using EGSE.Utilites;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -44,7 +45,7 @@ namespace kia_xan
         // поток, в который записываем данные с XSAN
         private FileStream _hsiFramesStream;
 
-        public HSIWindow(XSAN xxsan)
+        public HSIWindow()
         {
             InitializeComponent();
             //
@@ -56,15 +57,17 @@ namespace kia_xan
             BUNICollection.Add(new HSIInterface.BUNIChannel("Резервный"));
             XSANGrid.DataContext = XSANCollection;
             BUNIGrid.DataContext = BUNICollection;
-
             //
-            _xsan = xxsan;
-            _xsan.HSIInt.XSANStat.onUKSFrameReceived = newUKSFrame;
-
             dispatcherTimer = new System.Windows.Threading.DispatcherTimer();
             dispatcherTimer.Tick += new EventHandler(timerWork);
             dispatcherTimer.Interval = new TimeSpan(0, 0, 1);
             dispatcherTimer.Start();
+        }
+
+        public void Init(XSAN xxsan)
+        {
+            _xsan = xxsan;
+            _xsan.HSIInt.XSANStat.onUKSFrameReceived = newUKSFrame;            
         }
 
         /// <summary>
@@ -223,6 +226,11 @@ namespace kia_xan
             if (logEvent != null) {
                 LogsClass.Instance.Files[LogsClass.OperatorIdx].LogText = logEvent; 
             }
+        }
+
+        private void Window_Closed(object sender, EventArgs e)
+        {
+
         }
     }
 }

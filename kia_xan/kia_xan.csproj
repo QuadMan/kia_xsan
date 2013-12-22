@@ -89,6 +89,9 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="..\..\..\..\CLASSES\ConsoleApplication1\CyclogramControl.xaml.cs">
+      <Link>CyclogramControl.xaml.cs</Link>
+    </Compile>
     <Compile Include="..\..\..\..\CLASSES\ConsoleApplication1\EDGEUtilitesADC.cs">
       <Link>EDGEUtilitesADC.cs</Link>
     </Compile>
@@ -140,8 +143,14 @@
     </Compile>
     <Compile Include="DefaultLoggers.cs" />
     <Compile Include="XsanConstants.cs" />
+    <Compile Include="XsanCyclogramCommands.cs" />
     <Compile Include="XsanTm.cs" />
     <Compile Include="XSANDevice.cs" />
+    <Page Include="..\..\..\..\CLASSES\ConsoleApplication1\CyclogramControl.xaml">
+      <Link>CyclogramControl.xaml</Link>
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="HSIWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

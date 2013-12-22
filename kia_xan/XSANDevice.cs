@@ -52,10 +52,10 @@ namespace kia_xan
             base.SendCmd(HSI_UKS_ADDR, UKSBuf);
         }
 
-        public void CmdPowerOnOff(byte turnOn)
+        public void CmdPowerOnOff(UInt32 turnOn)
         {
             turnOn &= 1;
-            base.SendCmd(POWER_SET_ADDR, new byte[1] { turnOn });
+            base.SendCmd(POWER_SET_ADDR, new byte[1] { (byte)turnOn });
         }
 
         /// <summary>
@@ -144,14 +144,15 @@ namespace kia_xan
         /// <summary>
         /// ссылка насписок управляющих элементов, передается из MainWindow
         /// </summary>
-        public List<ControlValue> ControlValuesList = new List<ControlValue>();
+        private List<ControlValue> ControlValuesList = new List<ControlValue>();
 
         /// <summary>
         /// Конструктор по-умолчанию
         /// </summary>
-        public XSAN()
+        public XSAN(List<ControlValue> cvl)
         {
             Connected = false;
+            ControlValuesList = cvl;
 
             _decoder = new ProtocolUSB5E4D(null, LogsClass.Instance.Files[LogsClass.UsbIdx], false, true);
             _decoder.GotProtocolMsg += new ProtocolUSBBase.ProtocolMsgEventHandler(onMessageFunc);
@@ -168,7 +169,6 @@ namespace kia_xan
             
             HSIInt = new HSIInterface();
             Tm = new XsanTm();
-            ControlValuesList = null;
         }
 
         /// <summary>
@@ -231,7 +231,7 @@ namespace kia_xan
                         break;
                     case TM_DATA_GET :
                         Tm.Update(msg1.Data);
-                        ControlValuesList[XsanConst.CTRL_POWER_IDX].GetValue = msg1.Data[6];
+                        ControlValuesList[XsanConst.POWER_CTRL_IDX].GetValue = msg1.Data[6];
                         break;
                     case HSI_XSAN_DATA_GET:
                         HSIInt.XSANStat.Update(msg1.Data, msg1.DataLen);

@@ -51,9 +51,9 @@ namespace kia_xan
 
             initDevice();
             initWindows();
+            initControlValues();
             loadWindows();
             initModules();
-            initControlValues();
 
             loadAppSettings();
 
@@ -63,6 +63,8 @@ namespace kia_xan
             dispatcherTimer.Tick += new EventHandler(timerWork);
             dispatcherTimer.Interval = new TimeSpan(0, 0, 1);
             dispatcherTimer.Start();
+            //
+            EGSE.Device.Start();
         }
 
         /// <summary>
@@ -197,7 +199,7 @@ namespace kia_xan
         /// <param name="e"></param>
         private void Window_Activated(object sender, EventArgs e)
         {
-            checkWindowsActivation();
+            //checkWindowsActivation();
         }
 
     }
