@@ -30,51 +30,67 @@ namespace kia_xan
     public partial class MainWindow : Window
     {
         private const string SW_CAPTION = XsanConst.SW_CAPTION;
-        private const string SW_VERSION = XsanConst.SW_VERSION;
         private const string DEV_NAME = XsanConst.DEV_NAME;
 
+        /// <summary>
+        /// Допустимые команды циклограммы
+        /// </summary>
         private XsanCyclogramCommands _xsanCycCommands = new XsanCyclogramCommands();
+        /// <summary>
+        /// Окно с Управлением ВСИ
+        /// </summary>
         private HSIWindow hsiWin;
-        private const int WIN_HSI_IDX = 1;
-
+        /// <summary>
+        /// КИА XSAN
+        /// </summary>
         private XSAN EGSE;
+        /*
+        public Boolean State
+        {
+            get { return (Boolean)this.GetValue(StateProperty); }
+            set { this.SetValue(StateProperty, value); }
+        }
+        public static readonly DependencyProperty StateProperty = DependencyProperty.Register(
+          "State", typeof(Boolean), typeof(MainWindow), new PropertyMetadata(false));
+        */
+        private void initDevice()
+        {
+            EGSE = new XSAN();
+        }
 
         private void initControlValues()
         {
-            _controlValuesList.Add(new ControlValue()); // XSAN_CTRL_IDX
-            _controlValuesList.Add(new ControlValue()); // BUNI_CTRL_IDX
-            _controlValuesList.Add(new ControlValue()); // POWER_CTRL_IDX
-
-            _controlValuesList[XsanConst.XSAN_CTRL_IDX].AddProperty(XsanConst.CTRL_XSAN_READY_IDX, hsiWin.XSANReadyCb, 4, 1, EGSE.Device.CmdHSIXSANControl);
-            _controlValuesList[XsanConst.XSAN_CTRL_IDX].AddProperty(XsanConst.CTRL_XSAN_BUSY_IDX, hsiWin.XSANBusyCb, 5, 1, EGSE.Device.CmdHSIXSANControl);
-            _controlValuesList[XsanConst.XSAN_CTRL_IDX].AddProperty(XsanConst.CTRL_XSAN_ME_IDX, hsiWin.XSANMECb, 6, 1, EGSE.Device.CmdHSIXSANControl);
-            _controlValuesList[XsanConst.XSAN_CTRL_IDX].AddProperty(XsanConst.CTRL_XSAN_CMD_CH_IDX, hsiWin.XSANCmdChannelCbb, 0, 2, EGSE.Device.CmdHSIXSANControl);
-            _controlValuesList[XsanConst.XSAN_CTRL_IDX].AddProperty(XsanConst.CTRL_XSAN_DAT_CH_IDX, hsiWin.XSANDatChannelCbb, 2, 2, EGSE.Device.CmdHSIXSANControl);
-            //
-            _controlValuesList[XsanConst.BUNI_CTRL_IDX].AddProperty(XsanConst.CTRL_BUNI_ON_IDX, hsiWin.BUNIOnCb, 0, 1, EGSE.Device.CmdHSIBUNIControl);
-            _controlValuesList[XsanConst.BUNI_CTRL_IDX].AddProperty(XsanConst.CTRL_BUNI_CMD_CH_IDX, hsiWin.BUNICmdChannelCbb, 1, 1, EGSE.Device.CmdHSIBUNIControl);
-            _controlValuesList[XsanConst.BUNI_CTRL_IDX].AddProperty(XsanConst.CTRL_BUNI_DAT_CH_IDX, hsiWin.BUNIDataChannelCbb, 2, 2, EGSE.Device.CmdHSIBUNIControl);
-            _controlValuesList[XsanConst.BUNI_CTRL_IDX].AddProperty(XsanConst.CTRL_BUNI_HZ_IDX, hsiWin.BUNIHzOn, 4, 1, EGSE.Device.CmdHSIBUNIControl);
-            _controlValuesList[XsanConst.BUNI_CTRL_IDX].AddProperty(XsanConst.CTRL_BUNI_KBV_IDX, hsiWin.BUNIKbvOn, 5, 1, EGSE.Device.CmdHSIBUNIControl);
-            //
-            _controlValuesList[XsanConst.POWER_CTRL_IDX].AddProperty(XsanConst.CTRL_POWER_IDX, null, 0, 1, EGSE.Device.CmdPowerOnOff);
-
-            _xsanCycCommands.ContolValuesList = _controlValuesList;
+            _xsanCycCommands.Xsan = EGSE;
+            _xsanCycCommands.HsiWin = hsiWin;
         }
 
-        private void initDevice()
+        /// <summary>
+        /// Метод инициализируеющий дополнительные модули (если это необходимо)
+        /// </summary>
+        private void initModules()
         {
-            EGSE = new XSAN(_controlValuesList);
+            CycloGrid.cycCommandsAvailable = _xsanCycCommands.CycCommandsAvailable;
+            hsiWin.Init(EGSE);
+
+            DataContext = this;
         }
 
+        /// <summary>
+        /// Создаем все окна, какие нам нужны
+        /// </summary>
         private void initWindows()
         {
-            _windowsList.Add(new HSIWindow());
-            hsiWin = (HSIWindow)_windowsList[WIN_HSI_IDX];
+            hsiWin = new HSIWindow();
+            //hsiWin.Owner = Application.Current.MainWindow;
+            hsiWin.UpdateLayout();
         }
 
+        /// <summary>
+        /// Раз в секунду по таймеру
+        /// </summary>
         private void OnTimerWork()
         {
+            EGSE.TickAllControlsValues();
             // выведем значения АЦП
             if (EGSE.Tm.IsPowerOn)
             {
@@ -122,22 +138,13 @@ namespace kia_xan
         }
 
         /// <summary>
-        /// Метод инициализируеющий дополнительные модули (если это необходимо)
-        /// </summary>
-        private void initModules()
-        {
-            CycloGrid.cycCommandsAvailable = _xsanCycCommands.CycCommandsAvailable;
-            hsiWin.Init(EGSE);
-        }
-
-        /// <summary>
         /// Метод проверяет, если чекбокс управляющий окном управления выбран, чтобы было активно окно, ему соответсвующее
         /// </summary>
         private void checkWindowsActivation()
         {
             if ((bool)HSIControlCb.IsChecked)
             {
-                _windowsList[WIN_HSI_IDX].Visibility = System.Windows.Visibility.Visible;
+                hsiWin.Visibility = System.Windows.Visibility.Visible;
             }
         }
 
@@ -147,7 +154,7 @@ namespace kia_xan
         private void loadAppSettings()
         {
             // если окно открыто, соответствующий чекбокс должен быть выбран
-            if (_windowsList[WIN_HSI_IDX].Visibility == System.Windows.Visibility.Visible)
+            if (hsiWin.Visibility == System.Windows.Visibility.Visible)
             {
                 HSIControlCb.IsChecked = true;
             }
@@ -190,12 +197,11 @@ namespace kia_xan
         {
             if ((bool)HSIControlCb.IsChecked)
             {
-                _windowsList[WIN_HSI_IDX].Owner = _windowsList[0];
-                _windowsList[WIN_HSI_IDX].Show();
+                hsiWin.Show();
             }
             else
             {
-                _windowsList[WIN_HSI_IDX].Hide();
+                hsiWin.Hide();
             }
         }
 
@@ -206,7 +212,7 @@ namespace kia_xan
         /// <param name="e"></param>
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            _controlValuesList[XsanConst.POWER_CTRL_IDX].SetProperty(XsanConst.CTRL_POWER_IDX, Convert.ToInt32(!EGSE.Tm.IsPowerOn));
+            EGSE.ControlValuesList[XsanConst.POWER_CTRL_IDX].SetProperty(XsanConst.PROPERTY_POWER_IDX, Convert.ToInt32(!EGSE.Tm.IsPowerOn));
         }
 
         /// <summary>
@@ -226,5 +232,11 @@ namespace kia_xan
                 }
             }
         }
+
+        private void HSIControlCb_Checked(object sender, RoutedEventArgs e)
+        {
+
+        }
+
     }
 }

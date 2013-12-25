@@ -1,4 +1,5 @@
-﻿using EGSE.Utilites;
+﻿using System.ComponentModel;
+using EGSE.Utilites;
 using EGSE.Utilites.ADC;
 /*
  * Доработки: + в класс протокола ввести конструктур с нашим логгером
@@ -33,9 +34,11 @@ namespace kia_xan
         private System.Windows.Threading.DispatcherTimer dispatcherTimer;
         //private AboutWin aboutWin;
         // список элементов упрвления
-        private List<ControlValue> _controlValuesList = new List<ControlValue>(); // TODO: добавление по ключу с проверкой уникальности!
+        //private List<ControlValue> _controlValuesList = new List<ControlValue>(); // TODO: добавление по ключу с проверкой уникальности!
         // список всех окно, основное окно программы всегда под индексом 0
-        private List<Window> _windowsList = new List<Window>();
+        //private List<Window> _windowsList = new List<Window>();
+
+        public TestC test = new TestC();
 
         /*********************************************************************************************************
          * 
@@ -45,9 +48,9 @@ namespace kia_xan
         public MainWindow()
         {
             InitializeComponent();
-            this.Title = SW_CAPTION;// +"  " + SW_VERSION;
+            this.Title = SW_CAPTION;// + " " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();// +"  " + SW_VERSION;
 
-            _windowsList.Add(Window.GetWindow(this));
+            //!_windowsList.Add(Window.GetWindow(this));
 
             initDevice();
             initWindows();
@@ -57,7 +60,7 @@ namespace kia_xan
 
             loadAppSettings();
 
-            LogsClass.Instance.Files[LogsClass.MainIdx].LogText = "Программа " + SW_VERSION + " загрузилась";
+            //LogsClass.Instance.Files[LogsClass.MainIdx].LogText = "Программа " + SW_VERSION + " загрузилась";
             
             dispatcherTimer = new System.Windows.Threading.DispatcherTimer();
             dispatcherTimer.Tick += new EventHandler(timerWork);
@@ -65,25 +68,28 @@ namespace kia_xan
             dispatcherTimer.Start();
             //
             EGSE.Device.Start();
+            //
+            //DataContext = this.test;
+            hsiWin.DataContext = EGSE;
         }
 
         /// <summary>
         /// Передает во все элементы управления тик времени для отсчета периода их обновления
         /// </summary>
-        private void testControlValuesOnTimeTick()
-        {
-            foreach (ControlValue cv in _controlValuesList)
-            {
-                cv.TimerTick();
-            }
-        }
+        //private void testControlValuesOnTimeTick()
+        //{
+            //foreach (ControlValue cv in _controlValuesList)
+            //{
+                //cv.TimerTick();
+            //}
+        //}
 
         /// <summary>
         /// Загружаем параметры окон из конфигурационного файла
         /// </summary>
         private void loadWindows()
         {
-            foreach (Window w in _windowsList)
+            foreach (Window w in Application.Current.Windows)
             {
                 AppSettings.LoadWindow(w);
             }
@@ -94,7 +100,7 @@ namespace kia_xan
         /// </summary>
         private void saveAllWindows()
         {
-            foreach (Window w in _windowsList)
+            foreach (Window w in Application.Current.Windows)
             {
                 AppSettings.SaveWindow(w);
             }
@@ -109,9 +115,10 @@ namespace kia_xan
         {
             OnTimerWork();
             // проверяем элементы управления - изменились ли они
-            testControlValuesOnTimeTick();
+            //testControlValuesOnTimeTick();
             // индикация подключения, скорости
             TimeLabel.Content = EGSE.ETime.ToString();
+            
             if (EGSE.Connected)
             {
                 ConnectionLabel.Background = Brushes.LightGreen;
@@ -122,6 +129,7 @@ namespace kia_xan
                 ConnectionLabel.Background = Brushes.Red;
                 ConnectionLabel.Content = DEV_NAME + " отключен";
             }
+             
             SpeedLabel.Content = Converter.SpeedToStr(EGSE.Device.speed) + " [" + EGSE.Device.globalBufSize.ToString() + "]";
         }
 
@@ -148,11 +156,16 @@ namespace kia_xan
         /// </summary>
         private void closeAll()
         {
-            Window mainWin = Window.GetWindow(this);
-            foreach (Window w in _windowsList.Where(w => w != mainWin))
+            //Window mainWin = Window.GetWindow(this);
+            
+            foreach (Window w in Application.Current.Windows)
             {
-                 w.Close();
+                if (w != Application.Current.MainWindow)
+                {
+                    w.Close();
+                }
             }
+            
             EGSE.Device.finishAll();
         }
 
@@ -173,9 +186,10 @@ namespace kia_xan
         /// <param name="e"></param>
         private void AboutButton_Click(object sender, RoutedEventArgs e)
         {
-            //aboutWin = new AboutWin();
-            //aboutWin.Owner = Window.GetWindow(this);
-            //aboutWin.ShowDialog();
+            Window aboutWin = new AboutWin();
+            aboutWin.Owner = Window.GetWindow(this);
+            aboutWin.ShowDialog();
+//            State = !State;
         }
 
         /// <summary>
@@ -202,5 +216,26 @@ namespace kia_xan
             //checkWindowsActivation();
         }
 
+    }
+
+    public class TestC : INotifyPropertyChanged
+    {
+        private bool _isWinOpened;
+
+        public bool IsWinOpened
+        {
+            get { return _isWinOpened; }
+            set
+            {
+                _isWinOpened = value;
+                FirePropertyChangedEvent("IsWinOpened");
+            }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        private void FirePropertyChangedEvent(string propertyName)
+        {
+            if (PropertyChanged != null) PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+        }
     }
 }

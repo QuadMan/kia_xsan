@@ -40,16 +40,11 @@ namespace kia_xan
         private System.Windows.Threading.DispatcherTimer dispatcherTimer;
         // ссылка на устройство
         private XSAN _xsan;
-        // чтобы указать, что окно должно закрываться а не скрываться (может быть и не нужно)
-        //private bool _canClose = false;
-        // поток, в который записываем данные с XSAN
-        private FileStream _hsiFramesStream;
 
         public HSIWindow()
         {
             InitializeComponent();
             //
-            _hsiFramesStream = null;
             // создаем коллекции для отображения статиcтики в таблицах по XSAN и БУНИ
             XSANCollection.Add(new HSIInterface.XSANChannel("Основной"));
             XSANCollection.Add(new HSIInterface.XSANChannel("Резервный"));
@@ -62,6 +57,8 @@ namespace kia_xan
             dispatcherTimer.Tick += new EventHandler(timerWork);
             dispatcherTimer.Interval = new TimeSpan(0, 0, 1);
             dispatcherTimer.Start();
+            //
+            DataContext = _xsan;
         }
 
         public void Init(XSAN xxsan)
@@ -78,7 +75,7 @@ namespace kia_xan
         public void newUKSFrame(byte[] buf, byte[] timeBuf)
         {
             EgseTime time = new EgseTime();
-            time.data = timeBuf;
+            time.Data = timeBuf;
 
             string uksString = time.ToString() + ": " + Converter.ByteArrayToHexStr(buf);
             UKSListBox.Dispatcher.Invoke(new Action(delegate { UKSListBox.Items.Add(uksString); UKSListBox.ScrollIntoView(uksString); }));
@@ -119,8 +116,8 @@ namespace kia_xan
             // покажем статистику по записанным данным, если запись производится
             if ((bool)WriteDataCheckBox.IsChecked)
             {
-                LogFileNameLabel.Content = System.IO.Path.GetFileName(_hsiFramesStream.Name);
-                LogFileSizeLabel.Content = Converter.FileSizeToStr((ulong)_hsiFramesStream.Length);
+                LogFileNameLabel.Content = System.IO.Path.GetFileName(_xsan.XsanFileName);
+                LogFileSizeLabel.Content = Converter.FileSizeToStr((ulong)_xsan.XsanFileSize);/// (ulong)_hsiFramesStream.Length);
             }
         }
 
@@ -131,14 +128,15 @@ namespace kia_xan
         /// <param name="e"></param>
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            if (UksStrTextBox.Text == "") return;
+            if (UksStrTextBox.Text == String.Empty) return;
+
             // проверяем количество байт
             if (UksStrTextBox.Text.Split(' ').Length > HSIInterface.HSI_MAX_UKS_BYTES_COUNT)
             {
                 MessageBox.Show("Длина УКС не должна быть больше " + HSIInterface.HSI_MAX_UKS_BYTES_COUNT.ToString());
                 return;
             }
-            //
+            
             byte[] UKSData;
             try
             {
@@ -173,46 +171,6 @@ namespace kia_xan
         {
             e.Cancel = true;
             Hide();
-        }
-
-        /// <summary>
-        /// Управление записью данных от XSAN
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void WriteDataCheckBox_Click(object sender, RoutedEventArgs e)
-        {
-            if ((bool)WriteDataCheckBox.IsChecked)
-            {
-                _hsiFramesStream = new FileStream("test.dat", System.IO.FileMode.Create);   // TODO: изменить имя файла на нормальное!
-                LogFileNameLabel.Visibility = Visibility.Visible;
-                LogFileSizeLabel.Visibility = Visibility.Visible;
-            }
-            else
-            {
-                if (_hsiFramesStream != null)
-                {
-                    _hsiFramesStream.Close();
-                    _hsiFramesStream = null;
-                }
-                LogFileNameLabel.Visibility = Visibility.Hidden;
-                LogFileSizeLabel.Visibility = Visibility.Hidden;
-            }
-            // выбираем, по какому каналу записываем данные (по комбобоксу выбора приема данных)
-            uint selectedChannel = 0;
-            switch (BUNIDataChannelCbb.SelectedIndex) {
-                case 1:selectedChannel = 0;
-                    break;
-                case 2: selectedChannel = 1;
-                    break;
-                case 3 :
-                    selectedChannel = 0;
-                    break;
-                default :
-                    selectedChannel = 0;
-                    break;
-            }
-            _xsan.SetFileAndChannelForLogXSANData(_hsiFramesStream, selectedChannel);
         }
 
         /// <summary>

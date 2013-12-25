@@ -12,7 +12,9 @@ namespace kia_xan
     class XsanCyclogramCommands
     {
         public CyclogramCommands CycCommandsAvailable;
-        public List<ControlValue> ContolValuesList; 
+        //public List<ControlValue> ContolValuesList;
+        public XSAN Xsan;
+        public HSIWindow HsiWin;
 
         private List<string> XSAN_CMD_LIST = new List<string>()
         {
@@ -40,11 +42,11 @@ namespace kia_xan
         public XsanCyclogramCommands()
         {
             CycCommandsAvailable = new CyclogramCommands();
-            CycCommandsAvailable.AddCommand("XSAN", new CyclogramLine("XSAN", XsanControlTest, XsanControlExec, ""));
-            CycCommandsAvailable.AddCommand("BUNI", new CyclogramLine("BUNI", BuniControlTest, BuniControlExec, ""));
-            CycCommandsAvailable.AddCommand("UKS", new CyclogramLine("UKS", UksTest, UksExec, ""));
-            CycCommandsAvailable.AddCommand("POWER", new CyclogramLine("POWER", PowerTest, PowerExec, ""));
-            CycCommandsAvailable.AddCommand("WRITE_XSAN_DATA", new CyclogramLine("WRITE_XSAN_DATA", WriteXsanDataTest, WriteXsanDataExec, ""));
+            CycCommandsAvailable.AddCommand("XSAN", new CyclogramLine("XSAN", XsanControlTest, XsanControlExec, String.Empty));
+            CycCommandsAvailable.AddCommand("BUNI", new CyclogramLine("BUNI", BuniControlTest, BuniControlExec, String.Empty));
+            CycCommandsAvailable.AddCommand("UKS", new CyclogramLine("UKS", UksTest, UksExec, String.Empty));
+            CycCommandsAvailable.AddCommand("POWER", new CyclogramLine("POWER", PowerTest, PowerExec, String.Empty));
+            CycCommandsAvailable.AddCommand("WRITE_XSAN_DATA", new CyclogramLine("WRITE_XSAN_DATA", WriteXsanDataTest, WriteXsanDataExec, String.Empty));
         }
 
         /// <summary>
@@ -62,7 +64,7 @@ namespace kia_xan
         /// <returns></returns>
         public bool XsanControlTest(string[] Params, out string errString)
         {
-            errString = "";
+            errString = String.Empty;
             switch (Params.Length)
             {
                 case 1 :
@@ -78,33 +80,33 @@ namespace kia_xan
                 case 5 :
                     if (Params[0] != "ON")
                     {
-                        errString = "Ошибка параметра";
+                        errString = "Ошибка параметра: должно быть ON";
                         return false;                        
                     }
 
                     int idx = XSAN_CMD_LIST.IndexOf(Params[1]);
                     if (idx == -1)
                     {
-                        errString = "Ошибка параметра";
+                        errString = "Ошибка параметра: должно быть " + string.Join(" ", XSAN_CMD_LIST.ToArray());
                         return false;
                     }
 
                     idx = XSAN_DAT_LIST.IndexOf(Params[2]);
                     if (idx == -1)
                     {
-                        errString = "Ошибка параметра";
+                        errString = "Ошибка параметра: должно быть " + string.Join(" ", XSAN_DAT_LIST.ToArray());
                         return false;
                     }
 
                     if ((Params[3] != "BUSY_ON") && (Params[3] != "BUSY_OFF"))
                     {
-                        errString = "Ошибка параметра";
+                        errString = "Ошибка параметра: должно быть BUSY_ON или BUSY_OFF";
                         return false;                        
                     }
 
                     if ((Params[4] != "ME_ON") && (Params[4] != "ME_OFF"))
                     {
-                        errString = "Ошибка параметра";
+                        errString = "Ошибка параметра: должно быть ME_ON или ME_OFF";
                         return false;
                     }
 
@@ -122,17 +124,15 @@ namespace kia_xan
             switch (Params.Length)
             {
                 case 1:
-                    ContolValuesList[XsanConst.XSAN_CTRL_IDX].SetProperty(XsanConst.CTRL_XSAN_READY_IDX, 0);
-                    ContolValuesList[XsanConst.XSAN_CTRL_IDX].UpdateUI = true;
+                    Xsan.ControlValuesList[XsanConst.XSAN_CTRL_IDX].SetProperty(XsanConst.PROPERTY_XSAN_READY_IDX, 0);
 
                     break;
                 case 5:
-                    ContolValuesList[XsanConst.XSAN_CTRL_IDX].SetProperty(XsanConst.CTRL_XSAN_READY_IDX, 1, false);
-                    ContolValuesList[XsanConst.XSAN_CTRL_IDX].SetProperty(XsanConst.CTRL_XSAN_CMD_CH_IDX, XSAN_CMD_LIST.IndexOf(Params[1]), false);
-                    ContolValuesList[XsanConst.XSAN_CTRL_IDX].SetProperty(XsanConst.CTRL_XSAN_DAT_CH_IDX, XSAN_DAT_LIST.IndexOf(Params[2]), false);
-                    ContolValuesList[XsanConst.XSAN_CTRL_IDX].SetProperty(XsanConst.CTRL_XSAN_BUSY_IDX, Convert.ToInt16(Params[3] == "BUSY_ON"), false);
-                    ContolValuesList[XsanConst.XSAN_CTRL_IDX].SetProperty(XsanConst.CTRL_XSAN_ME_IDX, Convert.ToInt16(Params[4] == "ME_ON"));
-                    ContolValuesList[XsanConst.XSAN_CTRL_IDX].UpdateUI = true;
+                    Xsan.ControlValuesList[XsanConst.XSAN_CTRL_IDX].SetProperty(XsanConst.PROPERTY_XSAN_READY_IDX, 1, false);
+                    Xsan.ControlValuesList[XsanConst.XSAN_CTRL_IDX].SetProperty(XsanConst.PROPERTY_XSAN_CMD_CH_IDX, XSAN_CMD_LIST.IndexOf(Params[1]), false);
+                    Xsan.ControlValuesList[XsanConst.XSAN_CTRL_IDX].SetProperty(XsanConst.PROPERTY_XSAN_DAT_CH_IDX, XSAN_DAT_LIST.IndexOf(Params[2]), false);
+                    Xsan.ControlValuesList[XsanConst.XSAN_CTRL_IDX].SetProperty(XsanConst.PROPERTY_XSAN_BUSY_IDX, Convert.ToInt16(Params[3] == "BUSY_ON"), false);
+                    Xsan.ControlValuesList[XsanConst.XSAN_CTRL_IDX].SetProperty(XsanConst.PROPERTY_XSAN_ME_IDX, Convert.ToInt16(Params[4] == "ME_ON"));
                     break;
                 default:
                     return false;
@@ -156,7 +156,7 @@ namespace kia_xan
         /// <returns></returns>
         public bool BuniControlTest(string[] Params, out string errString)
         {
-            errString = "";
+            errString = String.Empty;
             switch (Params.Length)
             {
                 case 1:
@@ -216,16 +216,14 @@ namespace kia_xan
             switch (Params.Length)
             {
                 case 1:
-                    ContolValuesList[XsanConst.BUNI_CTRL_IDX].SetProperty(XsanConst.CTRL_BUNI_ON_IDX, 0);
-                    ContolValuesList[XsanConst.BUNI_CTRL_IDX].UpdateUI = true;
+                    Xsan.ControlValuesList[XsanConst.BUNI_CTRL_IDX].SetProperty(XsanConst.PROPERTY_BUNI_ON_IDX, 0);
                     break;
                 case 5:
-                    ContolValuesList[XsanConst.BUNI_CTRL_IDX].SetProperty(XsanConst.CTRL_BUNI_ON_IDX, 1,false);
-                    ContolValuesList[XsanConst.BUNI_CTRL_IDX].SetProperty(XsanConst.CTRL_BUNI_CMD_CH_IDX, BUNI_CMD_LIST.IndexOf(Params[1]), false);
-                    ContolValuesList[XsanConst.BUNI_CTRL_IDX].SetProperty(XsanConst.CTRL_BUNI_DAT_CH_IDX, XSAN_DAT_LIST.IndexOf(Params[2]), false);
-                    ContolValuesList[XsanConst.BUNI_CTRL_IDX].SetProperty(XsanConst.CTRL_BUNI_HZ_IDX, Convert.ToInt16(Params[3] == "TIME_ON"), false);
-                    ContolValuesList[XsanConst.BUNI_CTRL_IDX].SetProperty(XsanConst.CTRL_BUNI_KBV_IDX, Convert.ToInt16(Params[4] == "OBT_ON"));
-                    ContolValuesList[XsanConst.BUNI_CTRL_IDX].UpdateUI = true;
+                    Xsan.ControlValuesList[XsanConst.BUNI_CTRL_IDX].SetProperty(XsanConst.PROPERTY_BUNI_ON_IDX, 1, false);
+                    Xsan.ControlValuesList[XsanConst.BUNI_CTRL_IDX].SetProperty(XsanConst.PROPERTY_BUNI_CMD_CH_IDX, BUNI_CMD_LIST.IndexOf(Params[1]), false);
+                    Xsan.ControlValuesList[XsanConst.BUNI_CTRL_IDX].SetProperty(XsanConst.PROPERTY_BUNI_DAT_CH_IDX, XSAN_DAT_LIST.IndexOf(Params[2]), false);
+                    Xsan.ControlValuesList[XsanConst.BUNI_CTRL_IDX].SetProperty(XsanConst.PROPERTY_BUNI_HZ_IDX, Convert.ToInt16(Params[3] == "TIME_ON"), false);
+                    Xsan.ControlValuesList[XsanConst.BUNI_CTRL_IDX].SetProperty(XsanConst.PROPERTY_BUNI_KBV_IDX, Convert.ToInt16(Params[4] == "OBT_ON"));
                     break;
                 default:
                     return false;
@@ -242,8 +240,8 @@ namespace kia_xan
         /// <returns></returns>
         public bool UksTest(string[] Params, out string errString)
         {
-            errString = "";
-            if ((Params.Length > 62) || (Params.Length < 1))
+            errString = String.Empty;
+            if ((Params == null) || (Params.Length > 62) || (Params.Length < 1))
             {
                 errString = "Должно быть задано от 1 до 62 байт данных УКС";
                 return false;
@@ -264,7 +262,7 @@ namespace kia_xan
         public bool UksExec(string[] Params)
         {
             byte[] UKSData = EGSE.Utilites.Converter.HexStrToByteArray(Params);
-            //_xsan.Device.CmdSendUKS(UKSData);
+            Xsan.Device.CmdSendUKS(UKSData);
 
             return true;
         }
@@ -279,10 +277,11 @@ namespace kia_xan
         /// <returns></returns>
         public bool PowerTest(string[] Params, out string errString)
         {
-            errString = "";
+            errString = String.Empty;
             if (!((Params.Length == 1) && ((Params[0] == "ON") || (Params[0] == "OFF"))))
             {
-                errString = "Ошибка формата команды!";
+                errString = "Ошибка формата команды: должно быть указано ON или OFF";
+                return false;
             }
 
             return true;
@@ -291,7 +290,7 @@ namespace kia_xan
         public bool PowerExec(string[] Params)
         {
             int val = Convert.ToInt32(Params[0] == "ON");
-            return ContolValuesList[XsanConst.POWER_CTRL_IDX].SetProperty(XsanConst.CTRL_POWER_IDX, val);
+            return Xsan.ControlValuesList[XsanConst.POWER_CTRL_IDX].SetProperty(XsanConst.PROPERTY_POWER_IDX, val);
         }
 
         /// <summary>
@@ -303,10 +302,10 @@ namespace kia_xan
         /// <returns></returns>
         public bool WriteXsanDataTest(string[] Params, out string errString)
         {
-            errString = "";
+            errString = String.Empty;
             if (!((Params.Length == 1) && ((Params[0] == "ON") || (Params[0] == "OFF"))))
             {
-                errString = "Ошибка формата команды!";
+                errString = "Ошибка формата команды: должно быть указано ON или OFF";
             }
 
             return true;
@@ -314,7 +313,8 @@ namespace kia_xan
 
         public bool WriteXsanDataExec(string[] Params)
         {
-            
+            Xsan.WriteXsanDataToFile = (Params[0] == "ON");
+
             return true;
         }
     }

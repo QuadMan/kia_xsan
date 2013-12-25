@@ -182,7 +182,7 @@ namespace kia_xan
             /// <param name="buf">Буфер данных декодера КВВ</param>
             public void Update(byte[] buf, FileStream fStream, uint channelForWriting)
             {
-                _hsiFrame = ByteArrayToStructure.make<HSIMessageStruct>(buf);
+                _hsiFrame = ByteArrayToStructure.Make<HSIMessageStruct>(buf);
 
                 _curChannelId = 0;
                 // узнаем, по какому каналу пришли данные
@@ -273,7 +273,7 @@ namespace kia_xan
             /// <param name="bufLen">Длина буфера</param>
             public void Update(byte[] buf, int bufLen)
             {
-                HSIFrame = ByteArrayToStructure.make<HSIMessageStruct>(buf);
+                HSIFrame = ByteArrayToStructure.Make<HSIMessageStruct>(buf);
 
                 // узнаем, по какому каналу пришли данные
                 _curChannelId = HSIFrame.Status & 1;
@@ -484,7 +484,7 @@ namespace kia_xan
             static public string ConvertToStr(byte[] buf) {
                 UInt64 secCount = buf[4] | ((UInt64)buf[3] << 8) | ((UInt64)buf[2] << 16) | ((UInt64)buf[1] << 24) | ((UInt64)buf[0] << 32);
                 TimeSpan time = TimeSpan.FromSeconds(secCount);
-                return string.Format("{0}:{1}:{2}:{3}", time.Days, time.Hours, time.Minutes, time.Seconds);
+                return string.Format("{0:00}:{1:00}:{2:00}:{3:00}", time.Days, time.Hours, time.Minutes, time.Seconds);
             }
         }
     }

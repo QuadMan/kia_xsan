@@ -69,6 +69,9 @@
   <PropertyGroup>
     <SignManifests>true</SignManifests>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>icon.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Data" />
@@ -122,6 +125,9 @@
     <Compile Include="..\..\..\..\CLASSES\ConsoleApplication1\EGSEUSBFTDI.cs">
       <Link>EGSEUSBFTDI.cs</Link>
     </Compile>
+    <Compile Include="..\..\..\..\CLASSES\ConsoleApplication1\EGSEUtilitesControlValues.cs">
+      <Link>EGSEUtilitesControlValues.cs</Link>
+    </Compile>
     <Compile Include="..\..\..\..\CLASSES\ConsoleApplication1\EGSEUtilitesEvent.cs">
       <Link>EGSEUtilitesEvent.cs</Link>
     </Compile>
@@ -130,6 +136,9 @@
     </Compile>
     <Compile Include="..\..\..\..\CLASSES\ConsoleApplication1\FTD2XX_NET.cs">
       <Link>FTD2XX_NET.cs</Link>
+    </Compile>
+    <Compile Include="AboutWin.xaml.cs">
+      <DependentUpon>AboutWin.xaml</DependentUpon>
     </Compile>
     <Compile Include="DefaultMainWindow.cs">
       <SubType>Code</SubType>
@@ -145,11 +154,15 @@
     <Compile Include="XsanConstants.cs" />
     <Compile Include="XsanCyclogramCommands.cs" />
     <Compile Include="XsanTm.cs" />
-    <Compile Include="XSANDevice.cs" />
+    <Compile Include="XsanDevice.cs" />
     <Page Include="..\..\..\..\CLASSES\ConsoleApplication1\CyclogramControl.xaml">
       <Link>CyclogramControl.xaml</Link>
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="AboutWin.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="HSIWindow.xaml">
       <SubType>Designer</SubType>
@@ -185,6 +198,7 @@
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <None Include="ClassDiagram1.cd" />
     <None Include="kia_xan_TemporaryKey.pfx" />
@@ -214,6 +228,9 @@
       <ProductName>.NET Framework 3.5 SP1</ProductName>
       <Install>false</Install>
     </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="icon.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

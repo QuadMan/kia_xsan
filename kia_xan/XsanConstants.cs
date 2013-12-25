@@ -1,34 +1,36 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace kia_xan
 {
     static public class XsanConst
     {
         public const string SW_CAPTION = "КИА XSAN";
-        public const string SW_VERSION = "0.0.1.0";
+        //public const string SW_VERSION = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
         public const string DEV_NAME = "БИ КИА XSAN";
         public const string XSANSerial = "KIA_LINA";
 
         /// <summary>
         /// Индекс свойств в Control Values
         /// </summary>
-        public const int CTRL_XSAN_READY_IDX = 0;
-        public const int CTRL_XSAN_BUSY_IDX = 1;
-        public const int CTRL_XSAN_ME_IDX = 2;
-        public const int CTRL_XSAN_CMD_CH_IDX = 3;
-        public const int CTRL_XSAN_DAT_CH_IDX = 4;
+        public const int PROPERTY_XSAN_READY_IDX = 0;
+        public const int PROPERTY_XSAN_BUSY_IDX = 1;
+        public const int PROPERTY_XSAN_ME_IDX = 2;
+        public const int PROPERTY_XSAN_CMD_CH_IDX = 3;
+        public const int PROPERTY_XSAN_DAT_CH_IDX = 4;
 
-        public const int CTRL_BUNI_ON_IDX = 5;
-        public const int CTRL_BUNI_CMD_CH_IDX = 6;
-        public const int CTRL_BUNI_DAT_CH_IDX = 7;
-        public const int CTRL_BUNI_HZ_IDX = 8;
-        public const int CTRL_BUNI_KBV_IDX = 9;
+        public const int PROPERTY_BUNI_ON_IDX = 5;
+        public const int PROPERTY_BUNI_CMD_CH_IDX = 6;
+        public const int PROPERTY_BUNI_DAT_CH_IDX = 7;
+        public const int PROPERTY_BUNI_HZ_IDX = 8;
+        public const int PROPERTY_BUNI_KBV_IDX = 9;
 
-        public const int CTRL_POWER_IDX = 10;
+        public const int PROPERTY_POWER_IDX = 10;
 
         /// <summary>
         /// Индекс объекта управления XSAN в массиве ControlValuesList
@@ -42,8 +44,6 @@ namespace kia_xan
         /// Индекс объекта управления POWER в массиве ControlValuesList
         /// </summary>
         public const int POWER_CTRL_IDX = 2;
-
-
 
         /// <summary>
         /// 

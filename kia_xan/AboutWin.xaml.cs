@@ -15,13 +15,14 @@ using System.Windows.Shapes;
 namespace kia_xan
 {
     /// <summary>
-    /// Interaction logic for XsanAbout.xaml
+    /// Interaction logic for AboutWin.xaml
     /// </summary>
-    public partial class XsanAbout : Window
+    public partial class AboutWin : Window
     {
-        public XsanAbout()
+        public AboutWin()
         {
             InitializeComponent();
+            VersionLabel.Content = "Версия " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

@@ -1,8 +1,8 @@
 ﻿<Window
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="d" x:Class="kia_xan.HSIWindow"
-        Title="Управление ВСИ" Height="611.75" Width="811" ResizeMode="NoResize" ShowInTaskbar="False" Closing="Window_Closing" PreviewMouseLeftButtonDown="mouseLoggerEvent">
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:local="clr-namespace:kia_xan" mc:Ignorable="d" x:Class="kia_xan.HSIWindow"
+        Title="Управление ВСИ" Left="100" Top="100" Height="611" Width="811" ResizeMode="NoResize" ShowInTaskbar="False" Closing="Window_Closing" PreviewMouseLeftButtonDown="mouseLoggerEvent">
     <Grid Margin="0,0,0,2">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="1206"/>
@@ -15,19 +15,19 @@
         </Grid.RowDefinitions>
         <GroupBox Header="Имитатор БУНИ" HorizontalAlignment="Left" Margin="10,10,0,0" Width="224" Grid.Row="0" Height="160" VerticalAlignment="Top">
             <StackPanel Margin="0">
-                <ComboBox x:Name="BUNICmdChannelCbb" SelectedIndex="0" Margin="5">
-                    <ComboBoxItem Content="Команды по основнову каналу"/>
-                    <ComboBoxItem Content="Команды по резервному каналу"/>
+                <ComboBox x:Name="BUNICmdChannelCbb" SelectedValue="{Binding Path=BuniImitatorCmdChannel, Mode=TwoWay}" SelectedValuePath="Tag" SelectedIndex="0" Margin="5">
+                    <ComboBoxItem Content="Команды по основнову каналу" Tag="0"/>
+                    <ComboBoxItem Content="Команды по резервному каналу" Tag="1"/>
                 </ComboBox>
-                <ComboBox x:Name="BUNIDataChannelCbb" SelectedIndex="0" Margin="5">
-                    <ComboBoxItem Content="Данные отключены"/>
-                    <ComboBoxItem Content="Данные по основному каналу"/>
-                    <ComboBoxItem Content="Данные по резервному каналу"/>
-                    <ComboBoxItem Content="Данные по всем каналам"/>
+                <ComboBox x:Name="BUNIDataChannelCbb" SelectedValue="{Binding Path=BuniImitatorDatChannel, Mode=TwoWay}" SelectedValuePath="Tag" SelectedIndex="0" Margin="5">
+                    <ComboBoxItem Content="Данные отключены" Tag="0"/>
+                    <ComboBoxItem Content="Данные по основному каналу" Tag="1"/>
+                    <ComboBoxItem Content="Данные по резервному каналу" Tag="2"/>
+                    <ComboBoxItem Content="Данные по всем каналам" Tag="3"/>
                 </ComboBox>
-                <CheckBox x:Name="BUNIOnCb" Content="Включить" Margin="5"/>
-                <CheckBox x:Name="BUNIHzOn" Content="Метки времени" Margin="5"/>
-                <CheckBox x:Name="BUNIKbvOn" Content="КБВ" Margin="5"/>
+                <CheckBox IsChecked="{Binding BuniImitatorOn, Mode=TwoWay}" x:Name="BUNIOnCb" Content="Включить" Margin="5"/>
+                <CheckBox IsChecked="{Binding BuniImitatorTimeStampOn, Mode=TwoWay}" x:Name="BUNIHzOn" Content="Метки времени" Margin="5"/>
+                <CheckBox IsChecked="{Binding BuniImitatorObtOn, Mode=TwoWay}" x:Name="BUNIKbvOn" Content="КБВ" Margin="5"/>
             </StackPanel>
         </GroupBox>
         <GroupBox Header="Данные от имитатора БУНИ" HorizontalAlignment="Left" Margin="239,10,0,0" VerticalAlignment="Top" Height="92" Width="557" Grid.Row="0">
@@ -67,28 +67,49 @@
         </Grid>
         <GroupBox Header="Имитатор XSAN" HorizontalAlignment="Left" Margin="10,11,0,0" VerticalAlignment="Top" Height="163" Width="224" Grid.Row="1" Grid.RowSpan="2">
             <StackPanel Margin="0">
-                <ComboBox x:Name="XSANCmdChannelCbb" SelectedIndex="0" Margin="5">
-                    <ComboBoxItem Content="Команды отключены"/>
-                    <ComboBoxItem Content="Команды по основному каналу"/>
-                    <ComboBoxItem Content="Команды по резервному каналу"/>
-                    <ComboBoxItem Content="Команды по обоим каналам"/>
+                <ComboBox x:Name="XSANCmdChannelCbb" SelectedValue="{Binding Path=XsanImitatorCmdChannel, Mode=TwoWay}" SelectedValuePath="Tag" SelectedIndex="0" Margin="5">
+                    <ComboBoxItem Content="Команды отключены" Tag="0"/>
+                    <ComboBoxItem Content="Команды по основному каналу" Tag="1"/>
+                    <ComboBoxItem Content="Команды по резервному каналу" Tag="2"/>
+                    <ComboBoxItem Content="Команды по обоим каналам" Tag="3"/>
                 </ComboBox>
-                <ComboBox x:Name="XSANDatChannelCbb" SelectedIndex="0" Margin="5">
-                    <ComboBoxItem Content="Данные отключены"/>
-                    <ComboBoxItem Content="Данные по основному каналу"/>
-                    <ComboBoxItem Content="Данные по резервному каналу"/>
-                    <ComboBoxItem Content="Данные по всем каналам"/>
+                <ComboBox x:Name="XSANDatChannelCbb" SelectedValue="{Binding Path=XsanImitatorDatChannel, Mode=TwoWay}" SelectedValuePath="Tag" SelectedIndex="0" Margin="5">
+                    <ComboBoxItem Content="Данные отключены" Tag="0"/>
+                    <ComboBoxItem Content="Данные по основному каналу" Tag="1"/>
+                    <ComboBoxItem Content="Данные по резервному каналу" Tag="2"/>
+                    <ComboBoxItem Content="Данные по всем каналам" Tag="3"/>
                 </ComboBox>
-                <CheckBox x:Name="XSANReadyCb" Content="Готов" Margin="5"/>
-                <CheckBox x:Name="XSANBusyCb" Content="Статус BUSY" Margin="5"/>
-                <CheckBox x:Name="XSANMECb" Content="Статус ME" Margin="5"/>
+                <CheckBox IsChecked="{Binding XsanImitatorReady, Mode=TwoWay}" x:Name="XSANReadyCb" Content="Готов" Margin="5"/>
+                <CheckBox IsChecked="{Binding XsanImitatorBusyOn, Mode=TwoWay}" x:Name="XSANBusyCb" Content="Статус BUSY" Margin="5"/>
+                <CheckBox IsChecked="{Binding XsanImitatorMeOn, Mode=TwoWay}" x:Name="XSANMECb" Content="Статус ME" Margin="5"/>
             </StackPanel>
         </GroupBox>
         <Button Content="Очистить всю статистику" HorizontalAlignment="Left" Margin="643,127,0,0" VerticalAlignment="Top" Width="147" Height="45" Grid.Row="1" Click="Button_Click_1"/>
         <CheckBox x:Name="NoScreenUpdateCb" Content="Не обновлять экран" HorizontalAlignment="Left" Margin="662,106,0,0" Grid.Row="1" VerticalAlignment="Top" Height="16" Width="128"/>
-        <CheckBox x:Name="WriteDataCheckBox" Content="Записывать данные" HorizontalAlignment="Left" Margin="244,106,0,0" Grid.Row="1" VerticalAlignment="Top" Height="16" Width="126" Click="WriteDataCheckBox_Click"/>
-        <Label x:Name="LogFileNameLabel" Content="" HorizontalAlignment="Left" Margin="244,127,0,0" Grid.Row="1" VerticalAlignment="Top" Width="164" Background="#FFFFF400" Height="21" Padding="0" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Visibility="Hidden"/>
-        <Label x:Name="LogFileSizeLabel" Content="" HorizontalAlignment="Left" Margin="244,153,0,0" Grid.Row="1" VerticalAlignment="Top" Width="164" Background="#FFFFF400" Height="21" Padding="0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Visibility="Hidden" Grid.RowSpan="2"/>
-
+        <CheckBox x:Name="WriteDataCheckBox" Content="Записывать данные" HorizontalAlignment="Left" Margin="244,106,0,0" Grid.Row="1" VerticalAlignment="Top" Height="16" Width="126" IsChecked="{Binding WriteXsanDataToFile, Mode=TwoWay}"/>
+        <Label x:Name="LogFileNameLabel" Content="" HorizontalAlignment="Left" Margin="244,127,0,0" Grid.Row="1" VerticalAlignment="Top" Width="164" Background="#FFFFF400" Height="21" Padding="0" VerticalContentAlignment="Center" HorizontalContentAlignment="Center">
+            <Label.Style>
+                <Style TargetType="Label">
+                    <Setter Property="Visibility" Value="Hidden"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsChecked, ElementName=WriteDataCheckBox}" Value="True">
+                            <Setter Property="Visibility" Value="Visible"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Label.Style>
+        </Label>
+        <Label x:Name="LogFileSizeLabel" Content="" HorizontalAlignment="Left" Margin="244,153,0,0" Grid.Row="1" VerticalAlignment="Top" Width="164" Background="#FFFFF400" Height="21" Padding="0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Grid.RowSpan="2">
+            <Label.Style>
+                <Style TargetType="Label">
+                    <Setter Property="Visibility" Value="Hidden"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsChecked, ElementName=WriteDataCheckBox}" Value="True">
+                            <Setter Property="Visibility" Value="Visible"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Label.Style>
+        </Label>
     </Grid>
 </Window>

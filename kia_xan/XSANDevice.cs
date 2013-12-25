@@ -1,4 +1,6 @@
-﻿using EGSE;
+﻿using System.ComponentModel;
+using System.Diagnostics;
+using EGSE;
 using EGSE.Protocols;
 using EGSE.USB;
 using EGSE.Utilites;
@@ -15,7 +17,7 @@ namespace kia_xan
     /// <summary>
     /// Прописываются команды управления прибором по USB
     /// </summary>
-    public class XSANDevice : Device
+    public class XsanDevice : Device
     {
         private const int TIME_RESET_ADDR = 0x01;
         private const int TIME_DATA_ADDR = 0x02;
@@ -29,7 +31,7 @@ namespace kia_xan
 
         private byte[] buf;
 
-        public XSANDevice(string Serial, ProtocolUSBBase dec)
+        public XsanDevice(string Serial, ProtocolUSBBase dec)
             : base(Serial, dec, new USBCfg(10))
         {
         }
@@ -76,48 +78,16 @@ namespace kia_xan
             buf = new byte[1] { 1 };
 
             base.SendCmd(TIME_RESET_ADDR, buf);
-            base.SendCmd(TIME_DATA_ADDR, time.data);
+            base.SendCmd(TIME_DATA_ADDR, time.Data);
             base.SendCmd(TIME_OBT_ADDR, OBTData);
             base.SendCmd(TIME_SET_ADDR, buf);
         }
     }
-    /*
-    public class EGSEBase
-    {
-        private string _serial;
-        private TProt _protocol;
-        private TDev _device;
-        private bool _connected;
-        private EgseTime _eTime;
 
-        public TDev Device
-        {
-            get
-            {
-                return _device;
-            }
-        }
-
-        public bool Connected
-        {
-            get { return _connected; }
-        }
-
-        public EgseTime ETime
-        {
-            get { return _eTime; }
-        }
-
-        public EGSEBase(TProt _prot, TDev _dev) 
-        {
-            //_protocol = new TProt();
-        }
-    }
-    */
     /// <summary>
     /// Общий объект, позволяющий управлять прибором (принимать данные, выдавать команды)
     /// </summary>
-    public class XSAN
+    public class XSAN : INotifyPropertyChanged
     {
         private const int TIME_ADDR_GET = 0x04;
         private const int HSI_XSAN_CTRL_GET = 0x09;
@@ -126,33 +96,225 @@ namespace kia_xan
         private const int HSI_BUNI_DATA_GET = 0x07;
         private const int TM_DATA_GET = 5;
 
-        // *************************************************
+        // ********************************************************************
         private ProtocolUSB5E4D _decoder;
-        //**************************************************
+        //*********************************************************************
+        // приватные поля для свойств, управляющих интерфейсом
+        private bool _connected;
 
+        private int _buniImitatorCmdChannel;
+        private int _buniImitatorDatChannel;
+        private bool _buniImitatorOn;
+        private bool _buniImitatorTimeStampOn;
+        private bool _buniImitatorObtOn;
+
+        private int _xsanImitatorCmdChannel;
+        private int _xsanImitatorDatChannel;
+        private bool _xsanImitatorReady;
+        private bool _xsanImitatorBusyOn;
+        private bool _xsanImitatorMeOn;
+
+        private bool _writeXsanDataToFile;
+        //*********************************************************************
+        // куда записываем данные с XSAN
         private FileStream _xsanDataLogStream;
+        // с какого канала записываются данные (основного или резервного)
         private uint _xsanChannelForWriting;
+        private string _xsanFileName;
+        private ulong _xsanDataFileSize;
 
-        public XSANDevice Device;
+        /// <summary>
+        /// Доступ к USB устройству
+        /// </summary>
+        public XsanDevice Device;
 
-        public bool Connected { get; private set; }
+        public bool Connected
+        {
+            get { return _connected; }
+            private set
+            {
+                _connected = value;
+                FirePropertyChangedEvent("Connected");
+            } 
+        }
+
+        public int BuniImitatorCmdChannel
+        {
+            get { return _buniImitatorCmdChannel; }
+            set
+            {
+                _buniImitatorCmdChannel = value;
+                ControlValuesList[XsanConst.BUNI_CTRL_IDX].SetProperty(XsanConst.PROPERTY_BUNI_CMD_CH_IDX, value); 
+                FirePropertyChangedEvent("BuniImitatorCmdChannel");
+            }
+        }
+
+        public int BuniImitatorDatChannel
+        {
+            get { return _buniImitatorDatChannel; }
+            set
+            {
+                _buniImitatorDatChannel = value;
+                ControlValuesList[XsanConst.BUNI_CTRL_IDX].SetProperty(XsanConst.PROPERTY_BUNI_DAT_CH_IDX, value); 
+                FirePropertyChangedEvent("BuniImitatorDatChannel");
+            }
+        }
+
+        public bool BuniImitatorOn
+        {
+            get { return _buniImitatorOn; }
+            set 
+            { 
+                _buniImitatorOn = value;
+                ControlValuesList[XsanConst.BUNI_CTRL_IDX].SetProperty(XsanConst.PROPERTY_BUNI_ON_IDX, Convert.ToInt32(value)); 
+                FirePropertyChangedEvent("BuniImitatorOn"); 
+            }
+        }
+
+        public bool BuniImitatorTimeStampOn
+        {
+            get { return _buniImitatorTimeStampOn; }
+            set
+            {
+                _buniImitatorTimeStampOn = value;
+                ControlValuesList[XsanConst.BUNI_CTRL_IDX].SetProperty(XsanConst.PROPERTY_BUNI_HZ_IDX, Convert.ToInt32(value)); 
+                FirePropertyChangedEvent("BuniImitatorTimeStampOn");
+            }
+        }
+
+        public bool BuniImitatorObtOn
+        {
+            get { return _buniImitatorObtOn; }
+            
+            set
+            {
+                _buniImitatorObtOn = value;
+                ControlValuesList[XsanConst.BUNI_CTRL_IDX].SetProperty(XsanConst.PROPERTY_BUNI_KBV_IDX, Convert.ToInt32(value));
+                FirePropertyChangedEvent("BuniImitatorObtOn");
+            }
+        }
+
+        public int XsanImitatorCmdChannel
+        {
+            get { return _xsanImitatorCmdChannel; }
+            set
+            {
+                _xsanImitatorCmdChannel = value;
+                ControlValuesList[XsanConst.XSAN_CTRL_IDX].SetProperty(XsanConst.PROPERTY_XSAN_CMD_CH_IDX, value);
+                FirePropertyChangedEvent("XsanImitatorCmdChannel");
+            }
+        }
+
+        public int XsanImitatorDatChannel
+        {
+            get { return _xsanImitatorDatChannel; }
+            set
+            {
+                _xsanImitatorDatChannel = value;
+                ControlValuesList[XsanConst.XSAN_CTRL_IDX].SetProperty(XsanConst.PROPERTY_XSAN_DAT_CH_IDX, value);
+                FirePropertyChangedEvent("XsanImitatorDatChannel");
+            }
+        }
+
+        public bool XsanImitatorReady
+        {
+            get { return _xsanImitatorReady; }
+            set
+            {
+                _xsanImitatorReady = value;
+                ControlValuesList[XsanConst.XSAN_CTRL_IDX].SetProperty(XsanConst.PROPERTY_XSAN_READY_IDX, Convert.ToInt32(value));
+                FirePropertyChangedEvent("XsanImitatorReady");
+            }
+        }
+
+        public bool XsanImitatorBusyOn
+        {
+            get { return _xsanImitatorBusyOn; }
+            set
+            {
+                _xsanImitatorBusyOn = value;
+                ControlValuesList[XsanConst.XSAN_CTRL_IDX].SetProperty(XsanConst.PROPERTY_XSAN_BUSY_IDX, Convert.ToInt32(value));
+                FirePropertyChangedEvent("XsanImitatorBusyOn");
+            }
+        }
+
+        public bool XsanImitatorMeOn
+        {
+            get { return _xsanImitatorMeOn; }
+            set
+            {
+                _xsanImitatorMeOn = value;
+                ControlValuesList[XsanConst.XSAN_CTRL_IDX].SetProperty(XsanConst.PROPERTY_XSAN_ME_IDX, Convert.ToInt32(value));
+                FirePropertyChangedEvent("XsanImitatorMeOn");
+            }
+        }
+
+        public bool WriteXsanDataToFile
+        {
+            get { return _writeXsanDataToFile; }
+            set
+            {
+                _writeXsanDataToFile = value;
+                WriteXsanData(value);
+                FirePropertyChangedEvent("WriteXsanDataToFile");
+            }
+        }
+
+        public long XsanFileSize
+        {
+            get 
+            {
+                if (_xsanDataLogStream != null)
+                {
+                    return _xsanDataLogStream.Length;
+                }
+                else return 0;
+            }
+            //private set { _xsanDataFileSize = value; }
+        }
+
+        public string XsanFileName
+        {
+            get 
+            {
+                if (_xsanDataLogStream != null)
+                {
+                    return _xsanDataLogStream.Name;
+                }
+                else return string.Empty;
+            }
+            //private set { _xsanFileName = value; }
+        }
+
+        /// <summary>
+        /// Время, пришедшее от КИА
+        /// </summary>       
         public EgseTime ETime;
 
+        /// <summary>
+        /// Модуль декодера данных ВСИ интерфейса
+        /// </summary>
         public HSIInterface HSIInt;
+
+        /// <summary>
+        /// Модуль декодера телеметрии
+        /// </summary>
         public XsanTm Tm;
 
         /// <summary>
-        /// ссылка насписок управляющих элементов, передается из MainWindow
+        /// cписок управляющих элементов
         /// </summary>
-        private List<ControlValue> ControlValuesList = new List<ControlValue>();
+        public List<ControlValue> ControlValuesList = new List<ControlValue>();
 
         /// <summary>
         /// Конструктор по-умолчанию
         /// </summary>
-        public XSAN(List<ControlValue> cvl)
+        public XSAN()
         {
             Connected = false;
-            ControlValuesList = cvl;
+            ControlValuesList.Add(new ControlValue()); // XSAN_CTRL_IDX
+            ControlValuesList.Add(new ControlValue()); // BUNI_CTRL_IDX
+            ControlValuesList.Add(new ControlValue()); // POWER_CTRL_IDX
 
             _decoder = new ProtocolUSB5E4D(null, LogsClass.Instance.Files[LogsClass.UsbIdx], false, true);
             _decoder.GotProtocolMsg += new ProtocolUSBBase.ProtocolMsgEventHandler(onMessageFunc);
@@ -160,15 +322,76 @@ namespace kia_xan
 
             ETime = new EgseTime();
 
-            Device = new XSANDevice(XsanConst.XSANSerial, _decoder);
+            Device = new XsanDevice(XsanConst.XSANSerial, _decoder);
             Device.onNewState = onChangeConnection;
             
             //
             _xsanDataLogStream = null;
             _xsanChannelForWriting = 0;
+            _writeXsanDataToFile = false;
             
             HSIInt = new HSIInterface();
             Tm = new XsanTm();
+            //
+            ControlValuesList[XsanConst.XSAN_CTRL_IDX].AddProperty(XsanConst.PROPERTY_XSAN_READY_IDX, 4, 1, Device.CmdHSIXSANControl, delegate(UInt32 value)
+            {
+                XsanImitatorReady = (value == 1);
+            });
+            ControlValuesList[XsanConst.XSAN_CTRL_IDX].AddProperty(XsanConst.PROPERTY_XSAN_BUSY_IDX, 5, 1, Device.CmdHSIXSANControl, delegate(UInt32 value)
+            {
+                XsanImitatorBusyOn = (value == 1);
+            });
+            ControlValuesList[XsanConst.XSAN_CTRL_IDX].AddProperty(XsanConst.PROPERTY_XSAN_ME_IDX, 6, 1, Device.CmdHSIXSANControl, delegate(UInt32 value)
+            {
+                XsanImitatorMeOn = (value == 1);
+            });
+            ControlValuesList[XsanConst.XSAN_CTRL_IDX].AddProperty(XsanConst.PROPERTY_XSAN_CMD_CH_IDX, 0, 2, Device.CmdHSIXSANControl, delegate(UInt32 value)
+            {
+                XsanImitatorCmdChannel = (int)value;
+
+            });
+            ControlValuesList[XsanConst.XSAN_CTRL_IDX].AddProperty(XsanConst.PROPERTY_XSAN_DAT_CH_IDX, 2, 2, Device.CmdHSIXSANControl, delegate(UInt32 value)
+            {
+                XsanImitatorDatChannel = (int)value;
+
+            });
+            //
+            ControlValuesList[XsanConst.BUNI_CTRL_IDX].AddProperty(XsanConst.PROPERTY_BUNI_ON_IDX, 0, 1, Device.CmdHSIBUNIControl, delegate(UInt32 value)
+            {
+                BuniImitatorOn = (value == 1);
+            });
+            ControlValuesList[XsanConst.BUNI_CTRL_IDX].AddProperty(XsanConst.PROPERTY_BUNI_CMD_CH_IDX, 1, 1, Device.CmdHSIBUNIControl, delegate(UInt32 value)
+            {
+                BuniImitatorCmdChannel = (int)value;
+            });
+            ControlValuesList[XsanConst.BUNI_CTRL_IDX].AddProperty(XsanConst.PROPERTY_BUNI_DAT_CH_IDX, 2, 2, Device.CmdHSIBUNIControl, delegate(UInt32 value)
+            {
+                BuniImitatorDatChannel = (int)value;
+            });
+            ControlValuesList[XsanConst.BUNI_CTRL_IDX].AddProperty(XsanConst.PROPERTY_BUNI_HZ_IDX, 4, 1, Device.CmdHSIBUNIControl, delegate(UInt32 value)
+            {
+                BuniImitatorTimeStampOn = (value == 1);
+            });
+            ControlValuesList[XsanConst.BUNI_CTRL_IDX].AddProperty(XsanConst.PROPERTY_BUNI_KBV_IDX, 5, 1, Device.CmdHSIBUNIControl, delegate(UInt32 value)
+            {
+                BuniImitatorObtOn = (value == 1);
+            });
+            //
+            ControlValuesList[XsanConst.POWER_CTRL_IDX].AddProperty(XsanConst.PROPERTY_POWER_IDX, 0, 1, Device.CmdPowerOnOff, delegate(UInt32 value) { });
+        }
+
+        /// <summary>
+        /// Для каждого элемента управления тикаем временем
+        /// </summary>
+        public void TickAllControlsValues()
+        {
+            //if (ControlValuesList == null) return;
+            Debug.Assert(ControlValuesList != null,"ControlValuesList не должны быть равны null!");
+
+            foreach (ControlValue cv in ControlValuesList)
+            {
+                cv.TimerTick();
+            }            
         }
 
         /// <summary>
@@ -176,8 +399,9 @@ namespace kia_xan
         /// </summary>
         private void refreshAllControlsValues()
         {
-            if (ControlValuesList == null) return;
-            
+//            if (ControlValuesList == null) return;
+            Debug.Assert(ControlValuesList != null, "ControlValuesList не должны быть равны null!");
+          
             foreach (ControlValue cv in ControlValuesList)
             {
                 cv.RefreshGetValue();
@@ -215,6 +439,40 @@ namespace kia_xan
             _xsanChannelForWriting = channel;
         }
 
+        public void WriteXsanData(bool StartWrite)
+        {
+            if (StartWrite)
+            {
+                string dataLogDir = Directory.GetCurrentDirectory().ToString() + "\\DATA\\";
+                Directory.CreateDirectory(dataLogDir);
+                string fileName = dataLogDir + "xsan_" + DateTime.Now.ToString("yyMMdd_HHmmss") + ".dat";
+                _xsanDataLogStream = new FileStream(fileName, System.IO.FileMode.Create);
+
+                // выбираем, по какому каналу записываем данные (по комбобоксу выбора приема данных)
+                switch (_buniImitatorDatChannel)
+                {
+                    case 1: _xsanChannelForWriting = 0;
+                        break;
+                    case 2: _xsanChannelForWriting = 1;
+                        break;
+                    case 3:
+                        _xsanChannelForWriting = 0;
+                        break;
+                    default:
+                        _xsanChannelForWriting = 0;
+                        break;
+                }
+            }
+            else
+            {
+                if (_xsanDataLogStream != null)
+                {
+                    _xsanDataLogStream.Close();
+                    _xsanDataLogStream = null;
+                }
+            }
+        }
+
         /// <summary>
         /// Метод обрабатывающий сообщения от декодера USB
         /// </summary>
@@ -227,11 +485,11 @@ namespace kia_xan
                 switch (msg1.Addr)
                 {
                     case TIME_ADDR_GET:
-                        Array.Copy(msg1.Data, 0, ETime.data, 0, 6);
+                        Array.Copy(msg1.Data, 0, ETime.Data, 0, 6);
                         break;
                     case TM_DATA_GET :
                         Tm.Update(msg1.Data);
-                        ControlValuesList[XsanConst.POWER_CTRL_IDX].GetValue = msg1.Data[6];
+                        ControlValuesList[XsanConst.POWER_CTRL_IDX].UsbValue = msg1.Data[6];
                         break;
                     case HSI_XSAN_DATA_GET:
                         HSIInt.XSANStat.Update(msg1.Data, msg1.DataLen);
@@ -240,10 +498,10 @@ namespace kia_xan
                         HSIInt.BUNIStat.Update(msg1.Data, _xsanDataLogStream, _xsanChannelForWriting);
                         break;
                     case HSI_BUNI_CTRL_GET:
-                        ControlValuesList[XsanConst.BUNI_CTRL_IDX].GetValue = msg1.Data[0];
+                        ControlValuesList[XsanConst.BUNI_CTRL_IDX].UsbValue = msg1.Data[0];
                         break;
                     case HSI_XSAN_CTRL_GET:
-                        ControlValuesList[XsanConst.XSAN_CTRL_IDX].GetValue = msg1.Data[0];
+                        ControlValuesList[XsanConst.XSAN_CTRL_IDX].UsbValue = msg1.Data[0];
                         break;
                 }
             }
@@ -259,6 +517,12 @@ namespace kia_xan
             string bufferStr = Converter.ByteArrayToHexStr(msg.Data);
 
             LogsClass.Instance.Files[LogsClass.ErrorsIdx].LogText = msg.Msg+" ("+bufferStr+", на позиции: "+msg.ErrorPos.ToString()+")";
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        private void FirePropertyChangedEvent(string propertyName)
+        {
+            if (PropertyChanged != null) PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }
