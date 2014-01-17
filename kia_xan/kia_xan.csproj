@@ -125,6 +125,9 @@
     <Compile Include="..\..\..\..\CLASSES\ConsoleApplication1\EGSEUSBFTDI.cs">
       <Link>EGSEUSBFTDI.cs</Link>
     </Compile>
+    <Compile Include="..\..\..\..\CLASSES\ConsoleApplication1\EGSEUtilitesBigBufferManager.cs">
+      <Link>EGSEUtilitesBigBufferManager.cs</Link>
+    </Compile>
     <Compile Include="..\..\..\..\CLASSES\ConsoleApplication1\EGSEUtilitesControlValues.cs">
       <Link>EGSEUtilitesControlValues.cs</Link>
     </Compile>

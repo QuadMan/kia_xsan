@@ -42,8 +42,8 @@ namespace kia_xan
         public XsanCyclogramCommands()
         {
             CycCommandsAvailable = new CyclogramCommands();
-            CycCommandsAvailable.AddCommand("XSAN", new CyclogramLine("XSAN", XsanControlTest, XsanControlExec, String.Empty));
-            CycCommandsAvailable.AddCommand("BUNI", new CyclogramLine("BUNI", BuniControlTest, BuniControlExec, String.Empty));
+            CycCommandsAvailable.AddCommand("IMIT_XSAN", new CyclogramLine("IMIT_XSAN", XsanControlTest, XsanControlExec, String.Empty));
+            CycCommandsAvailable.AddCommand("IMIT_BUNI", new CyclogramLine("IMIT_BUNI", BuniControlTest, BuniControlExec, String.Empty));
             CycCommandsAvailable.AddCommand("UKS", new CyclogramLine("UKS", UksTest, UksExec, String.Empty));
             CycCommandsAvailable.AddCommand("POWER", new CyclogramLine("POWER", PowerTest, PowerExec, String.Empty));
             CycCommandsAvailable.AddCommand("WRITE_XSAN_DATA", new CyclogramLine("WRITE_XSAN_DATA", WriteXsanDataTest, WriteXsanDataExec, String.Empty));

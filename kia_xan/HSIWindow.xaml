@@ -42,7 +42,6 @@
                 </DataGrid.Columns>
             </DataGrid>
         </GroupBox>
-        <TextBox x:Name="UksStrTextBox" HorizontalAlignment="Left" Height="23" Margin="320,134,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="381"/>
         <Label Content="УКС в XSAN" HorizontalAlignment="Left" Margin="244,134,0,0" VerticalAlignment="Top" Height="26" Width="74" RenderTransformOrigin="0.905,0.577"/>
         <Button Content="Выдать" HorizontalAlignment="Left" Margin="715,134,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click" Height="22"/>
         <GroupBox Header="Данные от XSAN" HorizontalAlignment="Left" Margin="239,11,0,0" VerticalAlignment="Top" Height="90" Width="557" Grid.Row="1">
@@ -111,5 +110,6 @@
                 </Style>
             </Label.Style>
         </Label>
+        <ComboBox x:Name="UksStrText" HorizontalAlignment="Left" Margin="323,134,0,0" VerticalAlignment="Top" Width="377" IsEditable="True"/>
     </Grid>
 </Window>

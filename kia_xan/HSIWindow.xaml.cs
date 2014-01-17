@@ -27,6 +27,11 @@ namespace kia_xan
     public partial class HSIWindow : Window
     {
         /// <summary>
+        /// Максимальное количество УКС для запоминания
+        /// </summary>
+        private const int MAX_UKS_COUNT = 5;
+
+        /// <summary>
         /// Список для вывода в таблицу данных от XSAN
         /// </summary>
         public ObservableCollection<kia_xan.HSIInterface.XSANChannel> XSANCollection = new ObservableCollection<kia_xan.HSIInterface.XSANChannel>();
@@ -35,7 +40,24 @@ namespace kia_xan
         /// Список для вывода в таблицу данных от БУНИ
         /// </summary>
         public ObservableCollection<kia_xan.HSIInterface.BUNIChannel> BUNICollection = new ObservableCollection<kia_xan.HSIInterface.BUNIChannel>();
+
+        //private HashSet<string> _uksSendedHashList = new HashSet<string>();
+
+        private List<string> _uksSendedList = new List<string>();
         
+        public List<string> UksSendedList
+        {
+            get
+            {
+                return _uksSendedList;
+            }
+
+            private set 
+            {
+                _uksSendedList = value;
+            }
+        }
+
         // таймер 1 раз в секунду
         private System.Windows.Threading.DispatcherTimer dispatcherTimer;
         // ссылка на устройство
@@ -121,6 +143,67 @@ namespace kia_xan
             }
         }
 
+        private void SendUks()
+        {
+            if (UksStrText.Text == String.Empty) return;
+
+            // проверяем количество байт
+            if (UksStrText.Text.Split(' ').Length > HSIInterface.HSI_MAX_UKS_BYTES_COUNT)
+            {
+                MessageBox.Show("Длина УКС не должна быть больше " + HSIInterface.HSI_MAX_UKS_BYTES_COUNT.ToString());
+                return;
+            }
+
+            byte[] UKSData;
+            try
+            {
+                UKSData = EGSE.Utilites.Converter.HexStrToByteArray(UksStrText.Text);
+
+                /*
+                if (!_uksSendedHashList.Contains(UksStrText.Text))
+                {
+                    if (_uksSendedHashList.Count > MAX_UKS_COUNT)
+                    {
+                        string val = (string)UksStrText.Items[0];
+                        UksStrText.Items.RemoveAt(UksStrText.Items.Count-1);
+                        _uksSendedHashList.Remove(val);
+                    }
+
+                    _uksSendedHashList.Add(UksStrText.Text);
+                    UksStrText.Items.Insert(0,UksStrText.Text);
+
+                    _uksSendedList.Clear();
+                    foreach (string s in _uksSendedHashList)
+                    {
+                        _uksSendedList.Add(s);
+                    }
+                }
+                 */
+                if (!_uksSendedList.Contains(UksStrText.Text))
+                {
+                    if (_uksSendedList.Count >= MAX_UKS_COUNT)
+                    {
+                        //UksStrText.Items.RemoveAt(UksStrText.Items.Count - 1);
+                        _uksSendedList.RemoveAt(_uksSendedList.Count - 1);
+                    }
+                    _uksSendedList.Insert(0, UksStrText.Text);
+
+                    //string[] sa =
+                    UksStrText.ItemsSource = _uksSendedList.ToArray<string>();
+                }
+
+                _xsan.Device.CmdSendUKS(UKSData);
+            }
+            catch
+            {
+                MessageBox.Show("Ошибка задания строки УКС - нужно перечислить байты через пробел в шестнадцатеричном виде.");
+            }
+            finally
+            {
+                UKSData = null;
+            }
+        }
+
         /// <summary>
         /// Кнопка "Выдать УКС"
         /// </summary>
@@ -128,27 +211,7 @@ namespace kia_xan
         /// <param name="e"></param>
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            if (UksStrTextBox.Text == String.Empty) return;
-
-            // проверяем количество байт
-            if (UksStrTextBox.Text.Split(' ').Length > HSIInterface.HSI_MAX_UKS_BYTES_COUNT)
-            {
-                MessageBox.Show("Длина УКС не должна быть больше " + HSIInterface.HSI_MAX_UKS_BYTES_COUNT.ToString());
-                return;
-            }
-            
-            byte[] UKSData;
-            try
-            {
-                 UKSData = EGSE.Utilites.Converter.HexStrToByteArray(UksStrTextBox.Text);
-                _xsan.Device.CmdSendUKS(UKSData);
-            }
-            catch {
-                MessageBox.Show("Ошибка задания строки УКС - нужно перечислить байты через пробел в шестнадцатеричном виде.");
-            }
-            finally {
-                UKSData = null;
-            }
+            SendUks();
         }
 
         /// <summary>

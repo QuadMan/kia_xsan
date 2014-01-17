@@ -130,7 +130,7 @@ namespace kia_xan
                 ConnectionLabel.Content = DEV_NAME + " отключен";
             }
              
-            SpeedLabel.Content = Converter.SpeedToStr(EGSE.Device.speed) + " [" + EGSE.Device.globalBufSize.ToString() + "]";
+            SpeedLabel.Content = Converter.SpeedToStr(EGSE.Device.Speed) + " [" + EGSE.Device.GlobalBufferSize.ToString() + "]";
         }
 
         /// <summary>
@@ -148,6 +148,8 @@ namespace kia_xan
             // закрываем лог-файлы
             LogsClass.Instance.Files[LogsClass.MainIdx].LogText = "Программа завершена";
             LogsClass.Instance.Files.FlushAll();
+
+            Application.Current.Shutdown();
         }
 
         /// <summary>
@@ -166,7 +168,7 @@ namespace kia_xan
                 }
             }
             
-            EGSE.Device.finishAll();
+            EGSE.Device.FinishAll();
         }
 
         /// <summary>
@@ -176,7 +178,7 @@ namespace kia_xan
         /// <param name="e"></param>
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
-            Application.Current.Shutdown();
+            Close();
         }
 
         /// <summary>

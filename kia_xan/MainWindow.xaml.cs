@@ -69,7 +69,7 @@ namespace kia_xan
         /// </summary>
         private void initModules()
         {
-            CycloGrid.cycCommandsAvailable = _xsanCycCommands.CycCommandsAvailable;
+            CycloGrid.AddCycCommands(_xsanCycCommands.CycCommandsAvailable);
             hsiWin.Init(EGSE);
 
             DataContext = this;
@@ -96,7 +96,7 @@ namespace kia_xan
             {
                 try
                 {
-                    U27VLabel.Content = Math.Round(EGSE.Tm.Adc.GetValue(XsanTm.ADC_CH_U)).ToString();
+                    U27VLabel.Content = Math.Round(EGSE.Tm.Adc.GetValue(XsanTm.ADC_CH_U)).ToString()+", "+EGSE.Tm.lastData1.ToString();
                 }
                 catch (ADCException)
                 {
@@ -104,7 +104,7 @@ namespace kia_xan
                 }
                 try
                 {
-                    IXSANLabel.Content = Math.Round(EGSE.Tm.Adc.GetValue(XsanTm.ADC_CH_I)).ToString();
+                    IXSANLabel.Content = Math.Round(EGSE.Tm.Adc.GetValue(XsanTm.ADC_CH_I)).ToString() + ", " + EGSE.Tm.lastData2.ToString();
                 }
                 catch (ADCException)
                 {
@@ -175,6 +175,9 @@ namespace kia_xan
                         break;
                 }
             }
+
+            AppSettings.LoadList(hsiWin.UksSendedList, "UksItems");
+            hsiWin.UksStrText.ItemsSource = hsiWin.UksSendedList.ToArray<string>();
         }
 
         /// <summary>
@@ -184,6 +187,7 @@ namespace kia_xan
         private void saveAppSettings()
         {
             AppSettings.Save("PowerLabel", Convert.ToString(TMGrid.Visibility));
+            AppSettings.SaveList(hsiWin.UksSendedList, "UksItems");
         }
 
         /// <summary>
@@ -237,6 +241,5 @@ namespace kia_xan
         {
 
         }
-
     }
 }

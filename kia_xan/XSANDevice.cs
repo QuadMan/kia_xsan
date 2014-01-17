@@ -120,8 +120,6 @@ namespace kia_xan
         private FileStream _xsanDataLogStream;
         // с какого канала записываются данные (основного или резервного)
         private uint _xsanChannelForWriting;
-        private string _xsanFileName;
-        private ulong _xsanDataFileSize;
 
         /// <summary>
         /// Доступ к USB устройству
@@ -323,7 +321,7 @@ namespace kia_xan
             ETime = new EgseTime();
 
             Device = new XsanDevice(XsanConst.XSANSerial, _decoder);
-            Device.onNewState = onChangeConnection;
+            Device.ChangeStateEvent = onChangeConnection;
             
             //
             _xsanDataLogStream = null;
