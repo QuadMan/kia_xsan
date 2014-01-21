@@ -73,9 +73,6 @@ namespace kia_xan
             }
         }
 
-        public int lastData1;
-        public int lastData2;
-
         /// <summary>
         /// Конструктор по-умолчанию
         /// </summary>
@@ -97,10 +94,8 @@ namespace kia_xan
         public void Update(byte[] buf)
         {
             Adc.AddData(ADC_CH_U, ((int)buf[0] << 8) | buf[1]);
-            lastData1 = ((int)buf[0] << 8) | buf[1];
             //Adc.AddData(ADC_CH_U, ((int)buf[2] << 8) | buf[3]);
             Adc.AddData(ADC_CH_I, ((int)buf[4] << 8) | buf[5]);
-            lastData2 = ((int)buf[4] << 8) | buf[5];
 
             _isPowerOn = (buf[6] & 1) == 1;
         }

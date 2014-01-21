@@ -96,7 +96,13 @@ namespace kia_xan
             {
                 try
                 {
-                    U27VLabel.Content = Math.Round(EGSE.Tm.Adc.GetValue(XsanTm.ADC_CH_U)).ToString()+", "+EGSE.Tm.lastData1.ToString();
+                    float tmpUValue = EGSE.Tm.Adc.GetValue(XsanTm.ADC_CH_U);
+                    if (tmpUValue > 15) {
+                        U27VLabel.Content = Math.Round(tmpUValue).ToString();
+                    }
+                    else {
+                        U27VLabel.Content = "---";
+                    }
                 }
                 catch (ADCException)
                 {
@@ -104,7 +110,7 @@ namespace kia_xan
                 }
                 try
                 {
-                    IXSANLabel.Content = Math.Round(EGSE.Tm.Adc.GetValue(XsanTm.ADC_CH_I)).ToString() + ", " + EGSE.Tm.lastData2.ToString();
+                    IXSANLabel.Content = Math.Round(EGSE.Tm.Adc.GetValue(XsanTm.ADC_CH_I)).ToString();
                 }
                 catch (ADCException)
                 {
