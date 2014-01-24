@@ -142,7 +142,7 @@ namespace kia_xan
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)л
         {
             // сохраняем все настройки приложения
             saveAllWindows();
