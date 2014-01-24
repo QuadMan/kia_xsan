@@ -128,6 +128,10 @@ namespace kia_xan
             {
                 ConnectionLabel.Background = Brushes.Red;
                 ConnectionLabel.Content = DEV_NAME + " отключен";
+
+                // инициализируем все экранные формы на значения по-умолчанию при отключении от устройства
+                DefaultScreenInit();
+                //hsiWin.Cle
             }
              
             SpeedLabel.Content = Converter.SpeedToStr(EGSE.Device.Speed) + " [" + EGSE.Device.GlobalBufferSize.ToString() + "]";

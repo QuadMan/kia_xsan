@@ -67,20 +67,10 @@ namespace kia_xan
             errString = String.Empty;
             switch (Params.Length)
             {
-                case 1 :
-                    if (Params[0] == "OFF")
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        errString = "У команды может быть только 1 параметр OFF";
-                        return false;                    
-                    }
                 case 5 :
-                    if (Params[0] != "ON")
+                    if ((Params[0] != "ON") && (Params[0] != "OFF"))
                     {
-                        errString = "Ошибка параметра: должно быть ON";
+                        errString = "Ошибка параметра: должно быть ON или OFF";
                         return false;                        
                     }
 
@@ -123,16 +113,15 @@ namespace kia_xan
         {
             switch (Params.Length)
             {
-                case 1:
-                    Xsan.ControlValuesList[XsanConst.XSAN_CTRL_IDX].SetProperty(XsanConst.PROPERTY_XSAN_READY_IDX, 0);
-
-                    break;
                 case 5:
-                    Xsan.ControlValuesList[XsanConst.XSAN_CTRL_IDX].SetProperty(XsanConst.PROPERTY_XSAN_READY_IDX, 1, false);
+                    int onOffParam = Params[0] == "ON" ? 1 : 0;
+                    Xsan.ControlValuesList[XsanConst.XSAN_CTRL_IDX].SetProperty(XsanConst.PROPERTY_XSAN_READY_IDX, onOffParam, false);
                     Xsan.ControlValuesList[XsanConst.XSAN_CTRL_IDX].SetProperty(XsanConst.PROPERTY_XSAN_CMD_CH_IDX, XSAN_CMD_LIST.IndexOf(Params[1]), false);
                     Xsan.ControlValuesList[XsanConst.XSAN_CTRL_IDX].SetProperty(XsanConst.PROPERTY_XSAN_DAT_CH_IDX, XSAN_DAT_LIST.IndexOf(Params[2]), false);
                     Xsan.ControlValuesList[XsanConst.XSAN_CTRL_IDX].SetProperty(XsanConst.PROPERTY_XSAN_BUSY_IDX, Convert.ToInt16(Params[3] == "BUSY_ON"), false);
                     Xsan.ControlValuesList[XsanConst.XSAN_CTRL_IDX].SetProperty(XsanConst.PROPERTY_XSAN_ME_IDX, Convert.ToInt16(Params[4] == "ME_ON"));
+
+                    Xsan.ControlValuesList[XsanConst.XSAN_CTRL_IDX].RefreshGetValue();  // вызываем для обновления галочек на экране
                     break;
                 default:
                     return false;
@@ -159,20 +148,10 @@ namespace kia_xan
             errString = String.Empty;
             switch (Params.Length)
             {
-                case 1:
-                    if (Params[0] == "OFF")
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        errString = "У команды может быть только 1 параметр OFF";
-                        return false;
-                    }
                 case 5:
-                    if (Params[0] != "ON")
+                    if ((Params[0] != "ON") && (Params[0] != "OFF"))
                     {
-                        errString = "Первый параметр должен быть ON";
+                        errString = "Первый параметр должен быть ON или OFF";
                         return false;
                     }
 
@@ -215,15 +194,15 @@ namespace kia_xan
         {
             switch (Params.Length)
             {
-                case 1:
-                    Xsan.ControlValuesList[XsanConst.BUNI_CTRL_IDX].SetProperty(XsanConst.PROPERTY_BUNI_ON_IDX, 0);
-                    break;
                 case 5:
-                    Xsan.ControlValuesList[XsanConst.BUNI_CTRL_IDX].SetProperty(XsanConst.PROPERTY_BUNI_ON_IDX, 1, false);
+                    int onOffParam = Params[0] == "ON" ? 1 : 0;
+                    Xsan.ControlValuesList[XsanConst.BUNI_CTRL_IDX].SetProperty(XsanConst.PROPERTY_BUNI_ON_IDX, onOffParam, false);
                     Xsan.ControlValuesList[XsanConst.BUNI_CTRL_IDX].SetProperty(XsanConst.PROPERTY_BUNI_CMD_CH_IDX, BUNI_CMD_LIST.IndexOf(Params[1]), false);
                     Xsan.ControlValuesList[XsanConst.BUNI_CTRL_IDX].SetProperty(XsanConst.PROPERTY_BUNI_DAT_CH_IDX, XSAN_DAT_LIST.IndexOf(Params[2]), false);
                     Xsan.ControlValuesList[XsanConst.BUNI_CTRL_IDX].SetProperty(XsanConst.PROPERTY_BUNI_HZ_IDX, Convert.ToInt16(Params[3] == "TIME_ON"), false);
                     Xsan.ControlValuesList[XsanConst.BUNI_CTRL_IDX].SetProperty(XsanConst.PROPERTY_BUNI_KBV_IDX, Convert.ToInt16(Params[4] == "OBT_ON"));
+
+                    Xsan.ControlValuesList[XsanConst.BUNI_CTRL_IDX].RefreshGetValue();
                     break;
                 default:
                     return false;

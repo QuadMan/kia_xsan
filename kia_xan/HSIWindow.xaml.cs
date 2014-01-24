@@ -58,6 +58,24 @@ namespace kia_xan
             }
         }
 
+        /// <summary>
+        /// Приводит все значения на форме к умолчанию
+        /// </summary>
+        public void DefaultScreen()
+        {
+            BUNICmdChannelCbb.SelectedIndex = 0;
+            BUNIDataChannelCbb.SelectedIndex = 0;
+            BUNIOnCb.IsChecked = false;
+            BUNIKbvOn.IsChecked = false;
+            BUNIHzOn.IsChecked = false;
+
+            XSANCmdChannelCbb.SelectedIndex = 0;
+            XSANDatChannelCbb.SelectedIndex = 0;
+            XSANBusyCb.IsChecked = false;
+            XSANMECb.IsChecked = false;
+            XSANReadyCb.IsChecked = false;
+        }
+
         // таймер 1 раз в секунду
         private System.Windows.Threading.DispatcherTimer dispatcherTimer;
         // ссылка на устройство
@@ -223,6 +241,7 @@ namespace kia_xan
         {
             _xsan.HSIInt.BUNIStat.Clear();
             _xsan.HSIInt.XSANStat.Clear();
+            UKSListBox.Items.Clear();
         }
 
         /// <summary>

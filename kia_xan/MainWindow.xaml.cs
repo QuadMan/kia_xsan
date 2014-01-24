@@ -1,10 +1,16 @@
-﻿using EGSE.Utilites;
-using EGSE.Utilites.ADC;
-/*
+﻿/*
+ * 24.01.2014 - доработал модуль циклограмм (добавил событие для остановки циклограммы)
+ *            - ввел функцию изначальной инициализации окон при отключении прибора
+ *            - очистка статистики очищает окно УКС
+ *            - исправлен модуль потока USB (теперь команды на выдачу не записываются, если устройство отключено)
+ * 
  * Доработки: 
  *            - доработать класс логгера, чтобы он нормально сбрасывал данные
  *            - вывести строки в ресурсы
  */
+
+using EGSE.Utilites;
+using EGSE.Utilites.ADC;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -56,6 +62,20 @@ namespace kia_xan
         private void initDevice()
         {
             EGSE = new XSAN();
+        }
+
+        /// <summary>
+        /// Метод инициализации экранных форм по-умолчанию
+        /// </summary>
+        private void DefaultScreenInit() 
+        {
+            PwrOnOffBtn.Content = "ВКЛ ПИТАНИЕ";
+            PowerLabel.Content = "Питание ВЫКЛ";
+            PowerLabel.Background = Brushes.Red;
+            U27VLabel.Content = "---";
+            IXSANLabel.Content = "---";
+
+            hsiWin.DefaultScreen();
         }
 
         private void initControlValues()
