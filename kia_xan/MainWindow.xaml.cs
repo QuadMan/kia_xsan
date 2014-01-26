@@ -49,19 +49,29 @@ namespace kia_xan
         /// <summary>
         /// КИА XSAN
         /// </summary>
-        private XSAN EGSE;
-        /*
-        public Boolean State
+        public XsanViewModel XsanVM;
+        private XsanModel _xsanModel;
+
+        private void init()
         {
-            get { return (Boolean)this.GetValue(StateProperty); }
-            set { this.SetValue(StateProperty, value); }
-        }
-        public static readonly DependencyProperty StateProperty = DependencyProperty.Register(
-          "State", typeof(Boolean), typeof(MainWindow), new PropertyMetadata(false));
-        */
-        private void initDevice()
-        {
-            EGSE = new XSAN();
+            // моздаем модель и представление-модель
+            _xsanModel = new XsanModel();
+            XsanVM = new XsanViewModel(_xsanModel);
+            
+            // создаем окна
+            hsiWin = new HSIWindow();
+            //hsiWin.Owner = Application.Current.MainWindow;
+            hsiWin.UpdateLayout();
+            hsiWin.Init(_xsanModel);
+            hsiWin.DataContext = XsanVM;
+
+            // инициализируем команды циклограммы
+            _xsanCycCommands.Xsan = XsanVM;
+            _xsanCycCommands.HsiWin = hsiWin;
+            CycloGrid.AddCycCommands(_xsanCycCommands.CycCommandsAvailable);
+
+            // устанавливаем контекст главного окна на текущую модель-представление
+            DataContext = XsanVM;
         }
 
         /// <summary>
@@ -78,76 +88,21 @@ namespace kia_xan
             hsiWin.DefaultScreen();
         }
 
-        private void initControlValues()
-        {
-            _xsanCycCommands.Xsan = EGSE;
-            _xsanCycCommands.HsiWin = hsiWin;
-        }
-
-        /// <summary>
-        /// Метод инициализируеющий дополнительные модули (если это необходимо)
-        /// </summary>
-        private void initModules()
-        {
-            CycloGrid.AddCycCommands(_xsanCycCommands.CycCommandsAvailable);
-            hsiWin.Init(EGSE);
-
-            DataContext = this;
-        }
-
-        /// <summary>
-        /// Создаем все окна, какие нам нужны
-        /// </summary>
-        private void initWindows()
-        {
-            hsiWin = new HSIWindow();
-            //hsiWin.Owner = Application.Current.MainWindow;
-            hsiWin.UpdateLayout();
-        }
-
         /// <summary>
         /// Раз в секунду по таймеру
         /// </summary>
         private void OnTimerWork()
         {
-            EGSE.TickAllControlsValues();
+            XsanVM.TickAllControlsValues();
             // выведем значения АЦП
-            if (EGSE.Tm.IsPowerOn)
-            {
-                try
-                {
-                    float tmpUValue = EGSE.Tm.Adc.GetValue(XsanTm.ADC_CH_U);
-                    if (tmpUValue > 15) {
-                        U27VLabel.Content = Math.Round(tmpUValue).ToString();
-                    }
-                    else {
-                        U27VLabel.Content = "---";
-                    }
-                }
-                catch (ADCException)
-                {
-                    U27VLabel.Content = "---";
-                }
-                try
-                {
-                    IXSANLabel.Content = Math.Round(EGSE.Tm.Adc.GetValue(XsanTm.ADC_CH_I)).ToString();
-                }
-                catch (ADCException)
-                {
-                    IXSANLabel.Content = "---";
-                }
-            }
-            else
-            {
-                U27VLabel.Content = "---";
-                IXSANLabel.Content = "---";
-            }
-            
-            updateTM();
+            XsanVM.GetTmValues();          
+//            updateTM();
         }
 
         private void updateTM()
         {
+            //TODO: переделать
+            /*
             // Индикация питания
             if (EGSE.Tm.IsPowerOn)
             {
@@ -161,6 +116,8 @@ namespace kia_xan
                 PowerLabel.Background = Brushes.Red;
                 PwrOnOffBtn.Content = "ВКЛ ПИТАНИЕ";
             }
+             */
+
         }
 
         /// <summary>
@@ -242,7 +199,8 @@ namespace kia_xan
         /// <param name="e"></param>
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            EGSE.ControlValuesList[XsanConst.POWER_CTRL_IDX].SetProperty(XsanConst.PROPERTY_POWER_IDX, Convert.ToInt32(!EGSE.Tm.IsPowerOn));
+            //TODO: переделать
+            XsanVM.ControlValuesList[XsanConst.POWER_CTRL_IDX].SetProperty(XsanConst.PROPERTY_POWER_IDX, Convert.ToInt32(!_xsanModel.Tm.IsPowerOn));
         }
 
         /// <summary>
@@ -261,11 +219,6 @@ namespace kia_xan
                     TMGrid.Visibility = System.Windows.Visibility.Visible;
                 }
             }
-        }
-
-        private void HSIControlCb_Checked(object sender, RoutedEventArgs e)
-        {
-
         }
     }
 }

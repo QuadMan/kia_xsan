@@ -156,8 +156,9 @@
     <Compile Include="DefaultLoggers.cs" />
     <Compile Include="XsanConstants.cs" />
     <Compile Include="XsanCyclogramCommands.cs" />
+    <Compile Include="XsanModel.cs" />
     <Compile Include="XsanTm.cs" />
-    <Compile Include="XsanDevice.cs" />
+    <Compile Include="XsanViewModel.cs" />
     <Page Include="..\..\..\..\CLASSES\ConsoleApplication1\CyclogramControl.xaml">
       <Link>CyclogramControl.xaml</Link>
       <Generator>MSBuild:Compile</Generator>

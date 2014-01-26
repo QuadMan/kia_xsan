@@ -3,6 +3,39 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:local="clr-namespace:kia_xan" mc:Ignorable="d" x:Class="kia_xan.HSIWindow"
         Title="Управление ВСИ" Left="100" Top="100" Height="611" Width="811" ResizeMode="NoResize" ShowInTaskbar="False" Closing="Window_Closing" PreviewMouseLeftButtonDown="mouseLoggerEvent">
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Connected}" Value="True">
+                    <Setter Property="IsEnabled" Value="True" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Connected}" Value="False">
+                    <Setter Property="IsEnabled" Value="False" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="CheckBox">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Connected}" Value="True">
+                    <Setter Property="IsEnabled" Value="True" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Connected}" Value="False">
+                    <Setter Property="IsEnabled" Value="False" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="ComboBox">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Connected}" Value="True">
+                    <Setter Property="IsEnabled" Value="True" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Connected}" Value="False">
+                    <Setter Property="IsEnabled" Value="False" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>        
+    </Window.Resources>
+
     <Grid Margin="0,0,0,2">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="1206"/>
@@ -43,7 +76,8 @@
             </DataGrid>
         </GroupBox>
         <Label Content="УКС в XSAN" HorizontalAlignment="Left" Margin="244,134,0,0" VerticalAlignment="Top" Height="26" Width="74" RenderTransformOrigin="0.905,0.577"/>
-        <Button Content="Выдать" HorizontalAlignment="Left" Margin="715,134,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click" Height="22"/>
+        <Button Content="Выдать" HorizontalAlignment="Left" Margin="715,134,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click" Height="22">
+        </Button>
         <GroupBox Header="Данные от XSAN" HorizontalAlignment="Left" Margin="239,11,0,0" VerticalAlignment="Top" Height="90" Width="557" Grid.Row="1">
             <DataGrid x:Name="BUNIGrid" Margin="0" ItemsSource="{Binding}" AutoGenerateColumns="False" ColumnWidth="100" IsReadOnly="True">
                 <DataGrid.Columns>

@@ -13,7 +13,7 @@ namespace kia_xan
     {
         public CyclogramCommands CycCommandsAvailable;
         //public List<ControlValue> ContolValuesList;
-        public XSAN Xsan;
+        public XsanViewModel Xsan;
         public HSIWindow HsiWin;
 
         private List<string> XSAN_CMD_LIST = new List<string>()
@@ -241,7 +241,7 @@ namespace kia_xan
         public bool UksExec(string[] Params)
         {
             byte[] UKSData = EGSE.Utilites.Converter.HexStrToByteArray(Params);
-            Xsan.Device.CmdSendUKS(UKSData);
+            Xsan.SendUks(UKSData);
 
             return true;
         }

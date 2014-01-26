@@ -32,14 +32,6 @@ namespace kia_xan
     public partial class MainWindow : Window
     {
         private System.Windows.Threading.DispatcherTimer dispatcherTimer;
-        //private AboutWin aboutWin;
-        // список элементов упрвления
-        //private List<ControlValue> _controlValuesList = new List<ControlValue>(); // TODO: добавление по ключу с проверкой уникальности!
-        // список всех окно, основное окно программы всегда под индексом 0
-        //private List<Window> _windowsList = new List<Window>();
-
-        public TestC test = new TestC();
-
         /*********************************************************************************************************
          * 
          * СТАНДАРТНЫЕ ОБРАБОТЧИКИ
@@ -50,14 +42,15 @@ namespace kia_xan
             InitializeComponent();
             this.Title = SW_CAPTION;// + " " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();// +"  " + SW_VERSION;
 
-            //!_windowsList.Add(Window.GetWindow(this));
-
+            init();
+            /*
             initDevice();
             initWindows();
             initControlValues();
             loadWindows();
             initModules();
-
+             */
+            loadWindows();
             loadAppSettings();
 
             //LogsClass.Instance.Files[LogsClass.MainIdx].LogText = "Программа " + SW_VERSION + " загрузилась";
@@ -67,22 +60,8 @@ namespace kia_xan
             dispatcherTimer.Interval = new TimeSpan(0, 0, 1);
             dispatcherTimer.Start();
             //
-            EGSE.Device.Start();
-            //
-            //DataContext = this.test;
-            hsiWin.DataContext = EGSE;
+            XsanVM.Start();
         }
-
-        /// <summary>
-        /// Передает во все элементы управления тик времени для отсчета периода их обновления
-        /// </summary>
-        //private void testControlValuesOnTimeTick()
-        //{
-            //foreach (ControlValue cv in _controlValuesList)
-            //{
-                //cv.TimerTick();
-            //}
-        //}
 
         /// <summary>
         /// Загружаем параметры окон из конфигурационного файла
@@ -114,27 +93,9 @@ namespace kia_xan
         private void timerWork(object sender, EventArgs e)
         {
             OnTimerWork();
-            // проверяем элементы управления - изменились ли они
-            //testControlValuesOnTimeTick();
-            // индикация подключения, скорости
-            TimeLabel.Content = EGSE.ETime.ToString();
-            
-            if (EGSE.Connected)
-            {
-                ConnectionLabel.Background = Brushes.LightGreen;
-                ConnectionLabel.Content = DEV_NAME + " подключен";
-            }
-            else
-            {
-                ConnectionLabel.Background = Brushes.Red;
-                ConnectionLabel.Content = DEV_NAME + " отключен";
-
-                // инициализируем все экранные формы на значения по-умолчанию при отключении от устройства
-                DefaultScreenInit();
-                //hsiWin.Cle
-            }
-             
-            SpeedLabel.Content = Converter.SpeedToStr(EGSE.Device.Speed) + " [" + EGSE.Device.GlobalBufferSize.ToString() + "]";
+            // TODO: доделать
+//                DefaultScreenInit();
+            XsanVM.GetTimeAndSpeed();
         }
 
         /// <summary>
@@ -142,7 +103,7 @@ namespace kia_xan
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)л
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             // сохраняем все настройки приложения
             saveAllWindows();
@@ -162,8 +123,6 @@ namespace kia_xan
         /// </summary>
         private void closeAll()
         {
-            //Window mainWin = Window.GetWindow(this);
-            
             foreach (Window w in Application.Current.Windows)
             {
                 if (w != Application.Current.MainWindow)
@@ -172,7 +131,7 @@ namespace kia_xan
                 }
             }
             
-            EGSE.Device.FinishAll();
+            _xsanModel.FinishAll();
         }
 
         /// <summary>
@@ -195,7 +154,6 @@ namespace kia_xan
             Window aboutWin = new AboutWin();
             aboutWin.Owner = Window.GetWindow(this);
             aboutWin.ShowDialog();
-//            State = !State;
         }
 
         /// <summary>
@@ -222,26 +180,5 @@ namespace kia_xan
             //checkWindowsActivation();
         }
 
-    }
-
-    public class TestC : INotifyPropertyChanged
-    {
-        private bool _isWinOpened;
-
-        public bool IsWinOpened
-        {
-            get { return _isWinOpened; }
-            set
-            {
-                _isWinOpened = value;
-                FirePropertyChangedEvent("IsWinOpened");
-            }
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-        private void FirePropertyChangedEvent(string propertyName)
-        {
-            if (PropertyChanged != null) PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
-        }
     }
 }

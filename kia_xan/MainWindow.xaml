@@ -14,33 +14,23 @@
             <ColumnDefinition Width="235"/>
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
-        <Label x:Name="ConnectionLabel" Content="" Background="Red" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" DockPanel.Dock="Top" Grid.Row="0" Margin="0,0,0,1" FontWeight="Bold" FontFamily="Arial" >
-            <!--
+        <Label x:Name="ConnectionLabel" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" DockPanel.Dock="Top" Grid.Row="0" Margin="0,0,0,1" FontWeight="Bold" FontFamily="Arial" >
             <Label.Style>
                 <Style TargetType="Label">
+                    <Setter Property="Content" Value="БИ КИА XSAN отключен"/>
+                    <Setter Property="Background" Value="Red"/>
                     <Style.Triggers>
-                        <DataTrigger Binding="{Binding Path=State}" Value="True">
-                            <Setter Property="Label.ContentTemplate" >
-                                <Setter.Value>
-                                    <DataTemplate>
-                                        <Label Content="Value is true" Background="LightGreen"/>
-                                    </DataTemplate>
-                                </Setter.Value>
-                            </Setter>
+                        <DataTrigger Binding="{Binding Connected}" Value="True">
+                            <Setter Property="Content" Value="БИ КИА XSAN подключен"/>
+                            <Setter Property="Background" Value="LightGreen"/>
                         </DataTrigger>
-                        <DataTrigger Binding="{Binding Path=State}" Value="False">
-                            <Setter Property="Label.ContentTemplate" >
-                                <Setter.Value>
-                                    <DataTemplate>
-                                        <Label Content="Value is fale" Background="Red"/>
-                                    </DataTemplate>
-                                </Setter.Value>
-                            </Setter>
+                        <DataTrigger Binding="{Binding Connected}" Value="False">
+                            <Setter Property="Content" Value="БИ КИА XSAN отключен"/>
+                            <Setter Property="Background" Value="Red"/>
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>
             </Label.Style>
-            -->
         </Label>
         <StackPanel Grid.Row="1" Grid.Column="0" MouseLeftButtonDown="StackPanel_MouseLeftButtonDown">
 
@@ -54,8 +44,36 @@
                         <ColumnDefinition/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Margin="0" Grid.Row="0" Orientation="Horizontal">
-                        <Button x:Name="PwrOnOffBtn" Content="ВКЛ ПИТАНИЕ" Width="100" Margin="5,5,5,10" Click="Button_Click"/>
-                        <Label x:Name="PowerLabel" Content="Питание ВЫКЛ" Width="100" Margin="10,5,5,10" Background="#FFFF1C1C" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FontFamily="Arial" FontWeight="Bold"/>
+                        <Button x:Name="PwrOnOffBtn" Content="ВКЛ ПИТАНИЕ" Width="100" Margin="5,5,5,10" Click="Button_Click">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Connected}" Value="True">
+                                            <Setter Property="IsEnabled" Value="True" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Connected}" Value="False">
+                                            <Setter Property="IsEnabled" Value="False" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                        <Label x:Name="PowerLabel" Content="Питание ВЫКЛ" Width="100" Margin="10,5,5,10" Background="#FFFF1C1C" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FontFamily="Arial" FontWeight="Bold">
+                            <!--
+                            <Label.Style>
+                                <Style TargetType="Label">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Tm.IsPower}" Value="True">
+                                            <Setter Property="IsEnabled" Value="True" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Connected}" Value="False">
+                                            <Setter Property="IsEnabled" Value="False" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Label.Style>
+                            -->
+                        </Label>
                     </StackPanel>
                     <Grid x:Name="TMGrid" Margin="0" Grid.Row="1">
                         <Grid.RowDefinitions>
@@ -69,8 +87,8 @@
                         </Grid.ColumnDefinitions>
                         <Label Content="U, В" Margin="2,0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FontWeight="Bold"/>
                         <Label Content="I, мА" Grid.Column="2" Margin="2,0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FontWeight="Bold"/>
-                        <Label x:Name="U27VLabel" Content="---" Margin="2,0,2,1" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Grid.Row="1" Background="#FFFFF300"/>
-                        <Label x:Name="IXSANLabel" Content="---" Grid.Column="2" Margin="2,0,2,1" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Grid.Row="1" Background="#FFFFF300"/>
+                        <Label x:Name="U27VLabel" Content="{Binding Path=U27Value, UpdateSourceTrigger=PropertyChanged}" Margin="2,0,2,1" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Grid.Row="1" Background="#FFFFF300"/>
+                        <Label x:Name="IXSANLabel" Content="{Binding Path=IValue, UpdateSourceTrigger=PropertyChanged}" Grid.Column="2" Margin="2,0,2,1" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Grid.Row="1" Background="#FFFFF300"/>
                     </Grid>
                 </Grid>
             </GroupBox>
@@ -81,8 +99,34 @@
 
                 </StackPanel>
             </GroupBox>
-            <Label x:Name="TimeLabel" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Height="29"/>
-            <Label x:Name="SpeedLabel" Content="" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+            <Label x:Name="TimeLabel" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Height="29">
+                <Label.Style>
+                    <Style TargetType="Label">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Connected}" Value="True">
+                                <Setter Property="Content" Value="{Binding XsanTime}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Connected}" Value="False">
+                                <Setter Property="Content" Value="--:--:--:---.---" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Label.Style>
+            </Label>
+            <Label x:Name="SpeedLabel" HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
+                <Label.Style>
+                    <Style TargetType="Label">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Connected}" Value="True">
+                                <Setter Property="Content" Value="{Binding XsanSpeed}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Connected}" Value="False">
+                                <Setter Property="Content" Value="---" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Label.Style>
+            </Label>
         </StackPanel>
         <StackPanel Orientation="Horizontal" Margin="12,0,21,0" Grid.Row="2">
             <Button x:Name="AboutButton" Content="О программе" Margin="5" Width="90" Height="26" Click="AboutButton_Click"/>

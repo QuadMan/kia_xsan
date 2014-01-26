@@ -79,7 +79,7 @@ namespace kia_xan
         // таймер 1 раз в секунду
         private System.Windows.Threading.DispatcherTimer dispatcherTimer;
         // ссылка на устройство
-        private XSAN _xsan;
+        private XsanModel _xsanModel;
 
         public HSIWindow()
         {
@@ -98,13 +98,13 @@ namespace kia_xan
             dispatcherTimer.Interval = new TimeSpan(0, 0, 1);
             dispatcherTimer.Start();
             //
-            DataContext = _xsan;
+            //DataContext = _xsanModel;
         }
 
-        public void Init(XSAN xxsan)
+        public void Init(XsanModel xxsan)
         {
-            _xsan = xxsan;
-            _xsan.HSIInt.XSANStat.onUKSFrameReceived = newUKSFrame;            
+            _xsanModel = xxsan;
+            _xsanModel._hsiInterface.XSANStat.onUKSFrameReceived = newUKSFrame;            
         }
 
         /// <summary>
@@ -135,29 +135,29 @@ namespace kia_xan
 
             for (int i = 0; i < 2; i++)
             {
-                XSANCollection[i].SRCnt = _xsan.HSIInt.XSANStat.Channels[i].SRCnt;
-                XSANCollection[i].ObtCnt = _xsan.HSIInt.XSANStat.Channels[i].OBTCnt;
-                XSANCollection[i].DRCnt = _xsan.HSIInt.XSANStat.Channels[i].DRCnt;
-                XSANCollection[i].TimeStampCnt = _xsan.HSIInt.XSANStat.Channels[i].TimeStampCnt;
-                XSANCollection[i].UksCnt = _xsan.HSIInt.XSANStat.Channels[i].UKSCnt;
-                XSANCollection[i].OBTStr = kia_xan.HSIInterface.BUNITime.ConvertToStr(_xsan.HSIInt.XSANStat.Channels[i].OBTVal);
+                XSANCollection[i].SRCnt = _xsanModel._hsiInterface.XSANStat.Channels[i].SRCnt;
+                XSANCollection[i].ObtCnt = _xsanModel._hsiInterface.XSANStat.Channels[i].OBTCnt;
+                XSANCollection[i].DRCnt = _xsanModel._hsiInterface.XSANStat.Channels[i].DRCnt;
+                XSANCollection[i].TimeStampCnt = _xsanModel._hsiInterface.XSANStat.Channels[i].TimeStampCnt;
+                XSANCollection[i].UksCnt = _xsanModel._hsiInterface.XSANStat.Channels[i].UKSCnt;
+                XSANCollection[i].OBTStr = kia_xan.HSIInterface.BUNITime.ConvertToStr(_xsanModel._hsiInterface.XSANStat.Channels[i].OBTVal);
 
-                BUNICollection[i].ErrInCRCCnt = _xsan.HSIInt.BUNIStat.Channels[i].ErrInCRCCnt;
-                BUNICollection[i].ErrInMarkerCnt = _xsan.HSIInt.BUNIStat.Channels[i].ErrInMarkerCnt;
-                BUNICollection[i].ErrInParityCnt = _xsan.HSIInt.BUNIStat.Channels[i].ErrInParityCnt;
-                BUNICollection[i].ErrInStopBitCnt = _xsan.HSIInt.BUNIStat.Channels[i].ErrInStopBitCnt;
-                BUNICollection[i].FramesCnt = _xsan.HSIInt.BUNIStat.Channels[i].FramesCnt;
-                BUNICollection[i].StatusBUSYCnt = _xsan.HSIInt.BUNIStat.Channels[i].StatusBUSYCnt;
-                BUNICollection[i].StatusDataFramesCnt = _xsan.HSIInt.BUNIStat.Channels[i].StatusDataFramesCnt;
-                BUNICollection[i].StatusMECnt = _xsan.HSIInt.BUNIStat.Channels[i].StatusMECnt;
-                BUNICollection[i].StatusSRCnt = _xsan.HSIInt.BUNIStat.Channels[i].StatusSRCnt;
+                BUNICollection[i].ErrInCRCCnt = _xsanModel._hsiInterface.BUNIStat.Channels[i].ErrInCRCCnt;
+                BUNICollection[i].ErrInMarkerCnt = _xsanModel._hsiInterface.BUNIStat.Channels[i].ErrInMarkerCnt;
+                BUNICollection[i].ErrInParityCnt = _xsanModel._hsiInterface.BUNIStat.Channels[i].ErrInParityCnt;
+                BUNICollection[i].ErrInStopBitCnt = _xsanModel._hsiInterface.BUNIStat.Channels[i].ErrInStopBitCnt;
+                BUNICollection[i].FramesCnt = _xsanModel._hsiInterface.BUNIStat.Channels[i].FramesCnt;
+                BUNICollection[i].StatusBUSYCnt = _xsanModel._hsiInterface.BUNIStat.Channels[i].StatusBUSYCnt;
+                BUNICollection[i].StatusDataFramesCnt = _xsanModel._hsiInterface.BUNIStat.Channels[i].StatusDataFramesCnt;
+                BUNICollection[i].StatusMECnt = _xsanModel._hsiInterface.BUNIStat.Channels[i].StatusMECnt;
+                BUNICollection[i].StatusSRCnt = _xsanModel._hsiInterface.BUNIStat.Channels[i].StatusSRCnt;
             }
 
             // покажем статистику по записанным данным, если запись производится
             if ((bool)WriteDataCheckBox.IsChecked)
             {
-                LogFileNameLabel.Content = System.IO.Path.GetFileName(_xsan.XsanFileName);
-                LogFileSizeLabel.Content = Converter.FileSizeToStr((ulong)_xsan.XsanFileSize);/// (ulong)_hsiFramesStream.Length);
+                LogFileNameLabel.Content = System.IO.Path.GetFileName(_xsanModel.XsanFileName);
+                LogFileSizeLabel.Content = Converter.FileSizeToStr((ulong)_xsanModel.XsanFileSize);/// (ulong)_hsiFramesStream.Length);
             }
         }
 
@@ -210,7 +210,7 @@ namespace kia_xan
                     UksStrText.ItemsSource = _uksSendedList.ToArray<string>();
                 }
 
-                _xsan.Device.CmdSendUKS(UKSData);
+                _xsanModel.CmdSendUKS(UKSData);
             }
             catch
             {
@@ -239,8 +239,8 @@ namespace kia_xan
         /// <param name="e"></param>
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            _xsan.HSIInt.BUNIStat.Clear();
-            _xsan.HSIInt.XSANStat.Clear();
+            _xsanModel._hsiInterface.BUNIStat.Clear();
+            _xsanModel._hsiInterface.XSANStat.Clear();
             UKSListBox.Items.Clear();
         }
 

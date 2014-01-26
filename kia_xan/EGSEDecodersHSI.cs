@@ -304,7 +304,6 @@ namespace kia_xan
                         break;
                     case HSI_UKS_FLAG:
                         Channels[_curChannelId].UKSCnt++;
-                        if (onUKSFrameReceived != null)           // если есть обработчик УКС, вызовем его, чтобы вывести их на экран, к примеру
                         {
                             byte[] tmpUKSBuf = new byte[sz];
                             Array.Copy(buf, 9, tmpUKSBuf, 0, sz);

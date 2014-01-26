@@ -99,5 +99,46 @@ namespace kia_xan
 
             _isPowerOn = (buf[6] & 1) == 1;
         }
+
+        public string U27Value;
+        public string IXsanValue;
+
+        public void GetAdcValue()
+        {
+            if (_isPowerOn)
+            {
+                try
+                {
+                    float tmpUValue = Adc.GetValue(XsanTm.ADC_CH_U);
+                    if (tmpUValue > 15)
+                    {
+                        U27Value = Math.Round(tmpUValue).ToString();
+                    }
+                    else
+                    {
+                        U27Value = "---";
+                    }
+                }
+                catch (ADCException)
+                {
+                    U27Value = "---";
+                }
+
+                try
+                {
+                    IXsanValue = Math.Round(Adc.GetValue(XsanTm.ADC_CH_I)).ToString();
+                }
+                catch (ADCException)
+                {
+                    IXsanValue = "---";
+                }
+            }
+            else
+            {
+                U27Value = "---";
+                IXsanValue = "---";
+            }
+            
+        }
     }
 }
